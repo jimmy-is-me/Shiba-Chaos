@@ -1,0 +1,3822 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="description" content="《柴犬拆家大作戰：咖呲的惡作劇》(Shiba Chaos) 是由 WUMETAX Lab 製作的原創 2D 像素風物理潛行平台動作網頁遊戲。操控調皮可愛的柴犬「咖呲」在家中咬拖鞋、拉衛生紙、頂翻花瓶、躲避主人視線完成拆家任務！">
+<title>柴犬拆家大作戰：咖呲的惡作劇 Shiba Chaos | WUMETAX Lab</title>
+<style>
+  :root {
+    --bg-wood: #5c3a21;
+    --bg-wood-light: #8b5a2b;
+    --bg-cream: #fff8e7;
+    --accent-orange: #e67e22;
+    --accent-orange-dark: #c05805;
+    --accent-red: #e64848;
+    --accent-green: #42b86b;
+    --text-dark: #362214;
+    --text-light: #fffdf9;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: #1f140d;
+    font-family: "PingFang TC", "Microsoft JhengHei", "Noto Sans TC", sans-serif;
+    color: var(--text-dark);
+    touch-action: none;
+  }
+
+  #app-container {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+  }
+
+  #game-canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    background: #2c1e16;
+    image-rendering: pixelated;
+  }
+
+  /* HUD Layer */
+  #hud-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    pointer-events: none;
+    padding: 10px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 10;
+  }
+
+  .hud-top-bar {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .hud-card {
+    background: rgba(255, 248, 231, 0.94);
+    border: 3px solid var(--bg-wood);
+    border-radius: 12px;
+    padding: 6px 12px;
+    box-shadow: 0 4px 0 rgba(54, 34, 20, 0.45);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    pointer-events: auto;
+  }
+
+  .hud-stat {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.15;
+  }
+
+  .hud-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #7c5836;
+  }
+
+  .hud-value {
+    font-size: 16px;
+    font-weight: 900;
+    color: var(--text-dark);
+  }
+
+  .hud-value.highlight {
+    color: var(--accent-orange-dark);
+  }
+
+  .hud-divider {
+    width: 2px;
+    height: 26px;
+    background: #d8c2a3;
+  }
+
+  #hud-paws {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+  }
+
+  .paw-icon {
+    width: 22px;
+    height: 22px;
+    transition: transform 0.2s, opacity 0.2s;
+  }
+
+  .paw-icon.lost {
+    opacity: 0.25;
+    transform: scale(0.85);
+    filter: grayscale(1);
+  }
+
+  /* Objectives & Skills Sub-bar */
+  .hud-sub-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+    pointer-events: none;
+  }
+
+  #objectives-box {
+    background: rgba(45, 29, 18, 0.85);
+    color: var(--text-light);
+    border: 2px solid #8b5a2b;
+    border-radius: 10px;
+    padding: 6px 10px;
+    font-size: 12px;
+    max-width: 310px;
+    backdrop-filter: blur(2px);
+  }
+
+  .obj-title {
+    font-weight: 800;
+    color: #ffd166;
+    margin-bottom: 3px;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+  }
+
+  .obj-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 2px 0;
+    font-weight: 600;
+  }
+
+  .obj-item.done {
+    color: #7bf1a8;
+    text-decoration: line-through;
+  }
+
+  .obj-check {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border: 2px solid #ffd166;
+    border-radius: 3px;
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  .obj-item.done .obj-check {
+    background: #42b86b;
+    border-color: #42b86b;
+  }
+
+  #skills-box {
+    display: flex;
+    gap: 6px;
+  }
+
+  .skill-badge {
+    background: rgba(45, 29, 18, 0.85);
+    border: 2px solid #a67449;
+    border-radius: 10px;
+    padding: 5px 8px;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 72px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .skill-badge.locked {
+    opacity: 0.45;
+    border-color: #555;
+  }
+
+  .skill-cd-fill {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 0%;
+    background: rgba(230, 126, 34, 0.48);
+    pointer-events: none;
+  }
+
+  .icon-btn {
+    background: var(--accent-orange);
+    color: #fff;
+    border: 2px solid var(--bg-wood);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-weight: 800;
+    font-size: 13px;
+    cursor: pointer;
+    box-shadow: 0 3px 0 var(--bg-wood);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    pointer-events: auto;
+  }
+
+  .icon-btn:active {
+    transform: translateY(2px);
+    box-shadow: 0 1px 0 var(--bg-wood);
+  }
+
+  /* Touch Controls */
+  #touch-controls {
+    position: absolute;
+    bottom: 12px;
+    left: 0;
+    width: 100%;
+    padding: 0 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    pointer-events: none;
+    z-index: 15;
+  }
+
+  .touch-group {
+    display: flex;
+    gap: 10px;
+    pointer-events: auto;
+  }
+
+  .touch-cluster-right {
+    display: grid;
+    grid-template-columns: repeat(3, 58px);
+    grid-template-rows: repeat(2, 58px);
+    gap: 8px;
+    pointer-events: auto;
+  }
+
+  .t-btn {
+    width: 62px;
+    height: 62px;
+    border-radius: 50%;
+    background: rgba(255, 248, 231, 0.8);
+    border: 3px solid var(--bg-wood);
+    box-shadow: 0 4px 0 rgba(54, 34, 20, 0.6);
+    color: var(--text-dark);
+    font-weight: 900;
+    font-size: 13px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    touch-action: none;
+    transition: background 0.1s;
+  }
+
+  .t-btn.small {
+    width: 58px;
+    height: 58px;
+    font-size: 12px;
+  }
+
+  .t-btn.primary {
+    background: rgba(230, 126, 34, 0.9);
+    color: #fff;
+  }
+
+  .t-btn.action-hide {
+    background: rgba(66, 184, 107, 0.88);
+    color: #fff;
+  }
+
+  .t-btn.pressed {
+    background: var(--accent-orange-dark) !important;
+    color: #fff !important;
+    transform: translateY(3px);
+    box-shadow: 0 1px 0 rgba(54, 34, 20, 0.6);
+  }
+
+  .t-btn span.key-sub {
+    font-size: 9px;
+    opacity: 0.78;
+    font-weight: 700;
+  }
+
+  /* Modals & Menus */
+  .overlay-screen {
+    position: absolute;
+    inset: 0;
+    background: rgba(26, 16, 10, 0.78);
+    backdrop-filter: blur(4px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 16px;
+    z-index: 30;
+  }
+
+  .hidden {
+    display: none !important;
+  }
+
+  .modal-panel {
+    background: var(--bg-cream);
+    border: 5px solid var(--bg-wood);
+    border-radius: 20px;
+    box-shadow: 0 10px 0 #2d1b0e, 0 16px 30px rgba(0,0,0,0.6);
+    width: 100%;
+    max-width: 590px;
+    max-height: 92vh;
+    overflow-y: auto;
+    padding: 20px 24px;
+    text-align: center;
+    position: relative;
+  }
+
+  .brand-tag {
+    display: inline-block;
+    background: var(--bg-wood);
+    color: #ffd166;
+    font-size: 11px;
+    font-weight: 800;
+    padding: 3px 10px;
+    border-radius: 99px;
+    margin-bottom: 6px;
+    text-decoration: none;
+    letter-spacing: 0.5px;
+  }
+
+  .brand-tag:hover {
+    background: var(--accent-orange-dark);
+    color: #fff;
+  }
+
+  .game-title {
+    font-size: clamp(22px, 4.6vw, 33px);
+    font-weight: 900;
+    color: var(--accent-orange-dark);
+    text-shadow: 2px 2px 0 #fff, 4px 4px 0 var(--bg-wood);
+    letter-spacing: 1px;
+    margin-bottom: 2px;
+  }
+
+  .game-subtitle {
+    font-size: 14px;
+    font-weight: 800;
+    color: #7c5836;
+    margin-bottom: 12px;
+  }
+
+  #title-shiba-preview {
+    width: 240px;
+    height: 122px;
+    margin: 0 auto 12px;
+    display: block;
+    background: #f3e3c3;
+    border: 3px solid var(--bg-wood);
+    border-radius: 14px;
+  }
+
+  .btn-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 10px 0;
+  }
+
+  .btn-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .wood-btn {
+    background: var(--accent-orange);
+    color: #fff;
+    border: 3px solid var(--bg-wood);
+    border-radius: 12px;
+    padding: 10px 16px;
+    font-size: 16px;
+    font-weight: 900;
+    cursor: pointer;
+    box-shadow: 0 4px 0 var(--bg-wood);
+    transition: transform 0.1s, background 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .wood-btn:hover {
+    background: #f39c12;
+  }
+
+  .wood-btn:active {
+    transform: translateY(3px);
+    box-shadow: 0 1px 0 var(--bg-wood);
+  }
+
+  .wood-btn.secondary {
+    background: #e9d5b5;
+    color: var(--text-dark);
+  }
+
+  .wood-btn.secondary:hover {
+    background: #f2e2c8;
+  }
+
+  .wood-btn.danger {
+    background: var(--accent-red);
+    color: #fff;
+  }
+
+  .wood-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  /* Level Select Cards */
+  .level-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 14px 0;
+    text-align: left;
+  }
+
+  .level-card {
+    background: #f7ebd2;
+    border: 3px solid var(--bg-wood);
+    border-radius: 14px;
+    padding: 12px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .level-card.locked {
+    opacity: 0.55;
+    background: #dfd3be;
+  }
+
+  .level-info h4 {
+    font-size: 16px;
+    font-weight: 900;
+    color: var(--text-dark);
+  }
+
+  .level-info p {
+    font-size: 12px;
+    color: #6e4e32;
+    margin-top: 2px;
+  }
+
+  .level-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+  }
+
+  .stars-row {
+    display: flex;
+    gap: 3px;
+  }
+
+  .star-svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  /* Controls & Settings Table */
+  .info-grid {
+    text-align: left;
+    background: #f5e6c8;
+    border: 2px solid #c9ad86;
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin: 10px 0;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  .key-badge {
+    display: inline-block;
+    background: var(--bg-wood);
+    color: #fff;
+    padding: 1px 7px;
+    border-radius: 5px;
+    font-size: 12px;
+    font-weight: 800;
+    margin-right: 4px;
+  }
+
+  .summary-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    background: #f5e6c8;
+    border: 2px solid #c9ad86;
+    border-radius: 12px;
+    padding: 12px;
+    margin: 12px 0;
+    text-align: left;
+  }
+
+  .sum-item {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 4px 6px;
+    border-bottom: 1px dashed #d5bc96;
+  }
+
+  .setting-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #dec8a4;
+    font-weight: 800;
+  }
+
+  input[type="range"] {
+    accent-color: var(--accent-orange);
+    width: 140px;
+  }
+
+  .footer-credit {
+    margin-top: 10px;
+    font-size: 11px;
+    color: #7c5836;
+    font-weight: 700;
+  }
+
+  .footer-credit a {
+    color: var(--accent-orange-dark);
+    text-decoration: none;
+  }
+
+  @media (max-width: 640px) {
+    #hud-layer {
+      padding: 6px 8px;
+    }
+    .hud-card {
+      padding: 4px 8px;
+      gap: 6px;
+    }
+    .hud-value {
+      font-size: 14px;
+    }
+    #objectives-box {
+      font-size: 11px;
+      max-width: 215px;
+    }
+    .t-btn {
+      width: 54px;
+      height: 54px;
+      font-size: 12px;
+    }
+    .touch-cluster-right {
+      grid-template-columns: repeat(3, 52px);
+      grid-template-rows: repeat(2, 52px);
+      gap: 6px;
+    }
+    .t-btn.small {
+      width: 52px;
+      height: 52px;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div id="app-container">
+  <canvas id="game-canvas"></canvas>
+
+  <!-- In-Game HUD -->
+  <div id="hud-layer" class="hidden">
+    <div class="hud-top-bar">
+      <div class="hud-card">
+        <div class="hud-stat">
+          <span class="hud-label" id="hud-level-name">第一關：咖呲的客廳大冒險</span>
+          <span class="hud-value"><span id="hud-score">0</span> / <span id="hud-target">550</span> 分</span>
+        </div>
+        <div class="hud-divider"></div>
+        <div class="hud-stat">
+          <span class="hud-label">剩餘時間</span>
+          <span class="hud-value highlight" id="hud-timer">120s</span>
+        </div>
+        <div class="hud-divider"></div>
+        <div class="hud-stat">
+          <span class="hud-label">狗掌機會</span>
+          <div id="hud-paws"></div>
+        </div>
+      </div>
+
+      <div class="hud-card">
+        <div class="hud-stat" style="min-width: 72px;">
+          <span class="hud-label">連擊 COMBO</span>
+          <span class="hud-value highlight" id="hud-combo">0 (x1.0)</span>
+        </div>
+        <button class="icon-btn" id="btn-pause" title="暫停 (Esc)">暫停</button>
+      </div>
+    </div>
+
+    <div class="hud-sub-bar">
+      <div id="objectives-box">
+        <div class="obj-title">咖呲的拆家目標</div>
+        <div id="objectives-list"></div>
+      </div>
+
+      <div id="skills-box">
+        <div class="skill-badge" id="badge-dash">
+          <div class="skill-cd-fill" id="cd-dash"></div>
+          <span>咖呲衝撞 (L)</span>
+          <span id="txt-dash">就緒</span>
+        </div>
+        <div class="skill-badge" id="badge-power">
+          <div class="skill-cd-fill" id="cd-power"></div>
+          <span>超級狗掌 (J)</span>
+          <span id="txt-power">未解鎖</span>
+        </div>
+        <div class="skill-badge" id="badge-djump">
+          <span>柴犬彈跳</span>
+          <span id="txt-djump">未解鎖</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile / Touch Virtual Controls -->
+  <div id="touch-controls" class="hidden">
+    <div class="touch-group">
+      <button class="t-btn" data-action="left">左移<span class="key-sub">A / ◀</span></button>
+      <button class="t-btn" data-action="right">右移<span class="key-sub">D / ▶</span></button>
+    </div>
+    <div class="touch-cluster-right">
+      <button class="t-btn small" data-action="slap">頂撞/咬<span class="key-sub">J</span></button>
+      <button class="t-btn small" data-action="scratch">抓撓<span class="key-sub">K</span></button>
+      <button class="t-btn small action-hide" data-action="interact">躲藏<span class="key-sub">E</span></button>
+      <button class="t-btn small" data-action="dash">衝撞<span class="key-sub">L</span></button>
+      <button class="t-btn primary" style="grid-column: span 2; width: 100%; border-radius: 28px;" data-action="jump">柴犬跳躍<span class="key-sub">Space / W</span></button>
+    </div>
+  </div>
+
+  <!-- Title Screen Modal -->
+  <div id="screen-title" class="overlay-screen">
+    <div class="modal-panel">
+      <a href="https://wumetax.com/" target="_blank" rel="noopener" class="brand-tag">WUMETAX Lab 原創出品</a>
+      <h1 class="game-title">柴犬拆家大作戰</h1>
+      <div class="game-subtitle">咖呲的惡作劇 ｜ Shiba Chaos</div>
+
+      <canvas id="title-shiba-preview" width="240" height="122"></canvas>
+
+      <div class="btn-list">
+        <button class="wood-btn" id="btn-start-game">開始遊戲（咖呲出動！）</button>
+        <button class="wood-btn secondary" id="btn-continue-game">繼續遊戲</button>
+        <div class="btn-row">
+          <button class="wood-btn secondary" id="btn-open-levels">關卡選擇</button>
+          <button class="wood-btn secondary" id="btn-open-help">操作說明</button>
+        </div>
+        <div class="btn-row">
+          <button class="wood-btn secondary" id="btn-open-settings">設定</button>
+          <button class="wood-btn danger" id="btn-open-reset">清除存檔</button>
+        </div>
+      </div>
+
+      <div class="footer-credit">
+        主角：柴犬「咖呲」｜ 製作者：WUMETAX ｜ 網站：<a href="https://wumetax.com/" target="_blank" rel="noopener">wumetax.com</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Level Select Modal -->
+  <div id="screen-levels" class="overlay-screen hidden">
+    <div class="modal-panel">
+      <h2 class="game-title" style="font-size: 26px;">選擇咖呲的拆家房間</h2>
+      <p class="game-subtitle">完成惡作劇目標並返回狗窩，即可解鎖下一間房間與咖呲的特殊技能！</p>
+      <div id="level-cards-container" class="level-cards"></div>
+      <button class="wood-btn secondary" id="btn-close-levels" style="width:100%;">返回主選單</button>
+    </div>
+  </div>
+
+  <!-- How to Play Modal -->
+  <div id="screen-help" class="overlay-screen hidden">
+    <div class="modal-panel">
+      <h2 class="game-title" style="font-size: 26px;">操作說明與咖呲拆家指南</h2>
+      <div class="info-grid">
+        <p><span class="key-badge">A / D</span> 或 <span class="key-badge">◀ / ▶</span> 控制柴犬咖呲左右移動與奔跑</p>
+        <p><span class="key-badge">W / 空白鍵 / ▲</span> 跳躍（可跳上沙發、桌面、流理台與書架）</p>
+        <p><span class="key-badge">J</span> 鼻子頂撞／狗掌拍打／咬取互動（頂落花瓶水杯、咬走拖鞋、咬住衛生紙捲拉出紙帶、頂球）</p>
+        <p><span class="key-badge">K</span> 前腳抓撓家具（靠近沙發或窗簾按住／連按，快速抓出抓痕或拉扯窗簾）</p>
+        <p><span class="key-badge">L / Shift</span> 咖呲衝撞（短距離高速衝刺，撞飛輕物或快速逃離主人）</p>
+        <p><span class="key-badge">E</span> 躲藏／返回狗窩（躲進大型紙箱、桌底、沙發後；完成目標後進入狗窩過關）</p>
+        <p><span class="key-badge">Esc</span> 暫停遊戲</p>
+      </div>
+      <div class="info-grid">
+        <strong>咖呲的高分與潛行秘訣：</strong><br>
+        • <strong>咬拖鞋＆拉衛生紙</strong>：靠近拖鞋或衛生紙捲按 <strong>J</strong> 咬住後奔跑，即可甩飛拖鞋或拉出長長的衛生紙帶賺取大量連擊分數！<br>
+        • <strong>花瓶與杯盤掉落</strong>：用鼻子頂下桌面後，<strong>撞擊地板才會破裂計分</strong>並發出聲響吸引主人查看。<br>
+        • <strong>咖呲的特殊技能</strong>：通關第 1 關解鎖<strong>「超級狗掌」</strong>，通關第 2 關解鎖<strong>「柴犬彈跳」</strong>！
+      </div>
+      <button class="wood-btn" id="btn-close-help" style="width:100%;">汪！帶咖呲去拆家！</button>
+    </div>
+  </div>
+
+  <!-- Audio & Settings Modal -->
+  <div id="screen-settings" class="overlay-screen hidden">
+    <div class="modal-panel">
+      <h2 class="game-title" style="font-size: 26px;">音效與系統設定</h2>
+      <div class="info-grid">
+        <div class="setting-row">
+          <span>柴犬與環境音效 (SFX)</span>
+          <button class="wood-btn secondary" id="btn-toggle-sfx" style="padding: 6px 14px; font-size: 14px;">開啟</button>
+        </div>
+        <div class="setting-row">
+          <span>背景音樂 (BGM)</span>
+          <button class="wood-btn secondary" id="btn-toggle-bgm" style="padding: 6px 14px; font-size: 14px;">開啟</button>
+        </div>
+        <div class="setting-row">
+          <span>主音量大小</span>
+          <input type="range" id="slider-volume" min="0" max="100" value="75">
+        </div>
+        <div class="setting-row" style="border-bottom:none;">
+          <span>手機觸控按鍵顯示</span>
+          <button class="wood-btn secondary" id="btn-toggle-touch" style="padding: 6px 14px; font-size: 14px;">顯示</button>
+        </div>
+      </div>
+      <button class="wood-btn" id="btn-close-settings" style="width:100%;">儲存並返回</button>
+    </div>
+  </div>
+
+  <!-- Reset Confirmation Modal -->
+  <div id="screen-reset-confirm" class="overlay-screen hidden">
+    <div class="modal-panel" style="max-width: 420px;">
+      <h2 class="game-title" style="font-size: 24px; color: var(--accent-red);">確定清除存檔？</h2>
+      <p style="margin: 14px 0; font-weight: 700; line-height: 1.5;">
+        這將會重設所有已解鎖關卡、最高分、星級紀錄與咖呲的特殊技能，此操作無法復原。
+      </p>
+      <div class="btn-row">
+        <button class="wood-btn danger" id="btn-confirm-reset">確定重設</button>
+        <button class="wood-btn secondary" id="btn-cancel-reset">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pause Modal -->
+  <div id="screen-pause" class="overlay-screen hidden">
+    <div class="modal-panel" style="max-width: 420px;">
+      <h2 class="game-title" style="font-size: 26px;">遊戲暫停</h2>
+      <p class="game-subtitle" id="pause-level-title">第一關：咖呲的客廳大冒險</p>
+      <div class="btn-list">
+        <button class="wood-btn" id="btn-resume">繼續拆家</button>
+        <button class="wood-btn secondary" id="btn-restart-pause">重新開始本關</button>
+        <button class="wood-btn secondary" id="btn-pause-help">操作說明</button>
+        <button class="wood-btn secondary" id="btn-pause-settings">音效設定</button>
+        <button class="wood-btn danger" id="btn-quit-to-menu">返回主選單</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Result / Summary Modal -->
+  <div id="screen-result" class="overlay-screen hidden">
+    <div class="modal-panel">
+      <h2 class="game-title" id="result-title">咖呲拆家成功！</h2>
+      <p class="game-subtitle" id="result-subtitle">咖呲開心地搖著捲尾巴溜回狗窩了！</p>
+
+      <div id="result-stars" class="stars-row" style="justify-content: center; margin: 10px 0;"></div>
+
+      <div class="summary-grid">
+        <div class="sum-item"><span>獲得分數</span><span id="res-score">0</span></div>
+        <div class="sum-item"><span>歷史最高</span><span id="res-best">0</span></div>
+        <div class="sum-item"><span>最高連擊</span><span id="res-combo">0</span></div>
+        <div class="sum-item"><span>破壞與惡作劇</span><span id="res-destroyed">0 次</span></div>
+        <div class="sum-item"><span>過關耗時</span><span id="res-time">0s</span></div>
+        <div class="sum-item"><span>被主人發現</span><span id="res-caught">0 次</span></div>
+      </div>
+
+      <div id="result-unlock-msg" class="info-grid hidden" style="background:#fff3cd; border-color:#ffca2c; color:#664d03; font-weight:800; text-align:center;"></div>
+
+      <div class="btn-row" style="margin-top: 12px;">
+        <button class="wood-btn" id="btn-next-level">下一關</button>
+        <button class="wood-btn secondary" id="btn-retry-level">重玩本關</button>
+      </div>
+      <button class="wood-btn secondary" id="btn-result-menu" style="width: 100%; margin-top: 8px;">返回主選單</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/**
+ * 《柴犬拆家大作戰：咖呲的惡作劇》Shiba Chaos
+ * 主角：柴犬「咖呲」｜ 製作者：WUMETAX (https://wumetax.com/) | WUMETAX Lab
+ * 單一 HTML5 原創像素風柴犬物理潛行平台動作遊戲
+ */
+(function() {
+  'use strict';
+
+  /* =========================================================================
+   * 1. SaveManager - 本機存檔管理與舊版存檔無縫相容轉換
+   * ========================================================================= */
+  const SAVE_KEY = 'wumetax_shibachaos_v1';
+  const LEGACY_SAVE_KEY = 'wumetax_catchaos_v1';
+
+  class SaveManager {
+    constructor() {
+      this.data = this.load();
+    }
+
+    getDefaultData() {
+      return {
+        version: 1,
+        unlockedLevel: 1,
+        levels: {
+          1: { highScore: 0, stars: 0, cleared: false },
+          2: { highScore: 0, stars: 0, cleared: false },
+          3: { highScore: 0, stars: 0, cleared: false }
+        },
+        skills: {
+          dash: true,
+          powerSlap: false,
+          doubleJump: false
+        },
+        settings: {
+          sfx: true,
+          bgm: true,
+          volume: 0.75,
+          showTouch: true
+        }
+      };
+    }
+
+    load() {
+      try {
+        let raw = localStorage.getItem(SAVE_KEY);
+        // 向下相容舊版存檔，不丟失玩家已解鎖關卡與紀錄
+        if (!raw) {
+          const legacyRaw = localStorage.getItem(LEGACY_SAVE_KEY);
+          if (legacyRaw) {
+            raw = legacyRaw;
+            localStorage.setItem(SAVE_KEY, legacyRaw);
+          }
+        }
+        if (!raw) return this.getDefaultData();
+        const parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed.unlockedLevel !== 'number') {
+          return this.getDefaultData();
+        }
+        const def = this.getDefaultData();
+        return {
+          version: 1,
+          unlockedLevel: Math.min(3, Math.max(1, Math.floor(parsed.unlockedLevel || 1))),
+          levels: {
+            1: Object.assign({}, def.levels[1], parsed.levels?.[1]),
+            2: Object.assign({}, def.levels[2], parsed.levels?.[2]),
+            3: Object.assign({}, def.levels[3], parsed.levels?.[3])
+          },
+          skills: Object.assign({}, def.skills, parsed.skills),
+          settings: Object.assign({}, def.settings, parsed.settings)
+        };
+      } catch (e) {
+        return this.getDefaultData();
+      }
+    }
+
+    save() {
+      try {
+        localStorage.setItem(SAVE_KEY, JSON.stringify(this.data));
+      } catch (e) {
+        // Ignore storage quota errors
+      }
+    }
+
+    reset() {
+      this.data = this.getDefaultData();
+      this.save();
+    }
+
+    recordLevelClear(levelId, score, stars) {
+      const lvl = this.data.levels[levelId];
+      if (!lvl) return null;
+      lvl.cleared = true;
+      if (score > lvl.highScore) lvl.highScore = score;
+      if (stars > lvl.stars) lvl.stars = stars;
+
+      let newlyUnlocked = [];
+      if (levelId < 3 && this.data.unlockedLevel < levelId + 1) {
+        this.data.unlockedLevel = levelId + 1;
+        newlyUnlocked.push(`解鎖第 ${levelId + 1} 關！`);
+      }
+      if (levelId >= 1 && !this.data.skills.powerSlap) {
+        this.data.skills.powerSlap = true;
+        newlyUnlocked.push('咖呲習得新技能：【超級狗掌】(頂撞推力與抓撓速度大幅提升)！');
+      }
+      if (levelId >= 2 && !this.data.skills.doubleJump) {
+        this.data.skills.doubleJump = true;
+        newlyUnlocked.push('咖呲習得新技能：【柴犬彈跳】(空中可再彈跳一次)！');
+      }
+      this.save();
+      return newlyUnlocked.join(' ');
+    }
+  }
+
+  /* =========================================================================
+   * 2. AudioManager - Web Audio API 柴犬專屬原創合成音效與輕快背景音
+   * ========================================================================= */
+  class AudioManager {
+    constructor(saveManager) {
+      this.saveManager = saveManager;
+      this.ctx = null;
+      this.bgmTimer = null;
+      this.bgmStep = 0;
+      this.isPlayingBgm = false;
+    }
+
+    initContext() {
+      if (!this.ctx) {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtx) {
+          this.ctx = new AudioCtx();
+        }
+      }
+      if (this.ctx && this.ctx.state === 'suspended') {
+        this.ctx.resume();
+      }
+    }
+
+    getVolume() {
+      return this.saveManager.data.settings.volume ?? 0.75;
+    }
+
+    canPlaySfx() {
+      return this.saveManager.data.settings.sfx && this.getVolume() > 0.01;
+    }
+
+    playTone(freq, type, duration, startTimeOffset = 0, volScale = 0.25, slideFreq = null) {
+      if (!this.canPlaySfx()) return;
+      this.initContext();
+      if (!this.ctx) return;
+
+      const now = this.ctx.currentTime + startTimeOffset;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, now);
+      if (slideFreq) {
+        osc.frequency.exponentialRampToValueAtTime(Math.max(20, slideFreq), now + duration);
+      }
+
+      const masterVol = this.getVolume() * volScale;
+      gain.gain.setValueAtTime(Math.max(0.001, masterVol), now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(now);
+      osc.stop(now + duration + 0.02);
+    }
+
+    playNoise(duration, filterFreq = 1200, volScale = 0.3) {
+      if (!this.canPlaySfx()) return;
+      this.initContext();
+      if (!this.ctx) return;
+
+      const bufferSize = Math.floor(this.ctx.sampleRate * duration);
+      const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = Math.random() * 2 - 1;
+      }
+
+      const noise = this.ctx.createBufferSource();
+      noise.buffer = buffer;
+
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.value = filterFreq;
+
+      const gain = this.ctx.createGain();
+      const now = this.ctx.currentTime;
+      gain.gain.setValueAtTime(this.getVolume() * volScale, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+      noise.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.ctx.destination);
+      noise.start(now);
+    }
+
+    // 柴犬短促汪叫 / 開心汪汪聲 / 被發現委屈哼聲
+    bark(mode = 'happy') {
+      if (mode === 'happy') {
+        // 活潑雙聲汪汪 "Arf! Arf!"
+        this.playNoise(0.06, 950, 0.22);
+        this.playTone(320, 'sawtooth', 0.09, 0, 0.24, 520);
+        this.playTone(520, 'triangle', 0.06, 0.06, 0.18, 280);
+
+        this.playNoise(0.06, 1050, 0.22);
+        this.playTone(360, 'sawtooth', 0.1, 0.14, 0.24, 590);
+        this.playTone(590, 'triangle', 0.07, 0.20, 0.18, 310);
+      } else if (mode === 'short') {
+        // 短促單聲汪 "Woof!"
+        this.playNoise(0.05, 900, 0.24);
+        this.playTone(300, 'sawtooth', 0.09, 0, 0.25, 460);
+        this.playTone(460, 'triangle', 0.06, 0.06, 0.18, 220);
+      } else {
+        // 疑惑或被主人發現時的委屈哼聲 "Whine..."
+        this.playTone(580, 'sine', 0.14, 0, 0.22, 410);
+        this.playTone(410, 'triangle', 0.2, 0.13, 0.2, 290);
+      }
+    }
+
+    jump(isDouble = false) {
+      if (isDouble) {
+        this.playTone(340, 'sine', 0.14, 0, 0.24, 740);
+        this.playTone(520, 'triangle', 0.1, 0.05, 0.18, 860);
+      } else {
+        this.playTone(250, 'sine', 0.14, 0, 0.22, 560);
+      }
+    }
+
+    land() {
+      this.playTone(125, 'triangle', 0.08, 0, 0.18, 60);
+    }
+
+    dash() {
+      this.playNoise(0.14, 1500, 0.26);
+      this.playTone(260, 'sawtooth', 0.12, 0, 0.2, 540);
+    }
+
+    pawHit(power = false) {
+      this.playNoise(0.09, power ? 850 : 1400, power ? 0.36 : 0.24);
+      this.playTone(power ? 200 : 310, 'square', 0.09, 0, 0.22, 105);
+    }
+
+    slipperBite() {
+      this.playNoise(0.08, 1800, 0.24);
+      this.playTone(420, 'triangle', 0.08, 0, 0.2, 620);
+      this.playTone(580, 'triangle', 0.08, 0.07, 0.2, 380);
+    }
+
+    tpUnroll() {
+      this.playNoise(0.07, 2400, 0.18);
+      this.playTone(680, 'sine', 0.05, 0, 0.12, 820);
+    }
+
+    shatter() {
+      this.playNoise(0.28, 3200, 0.38);
+      this.playTone(1400, 'sine', 0.07, 0.02, 0.18, 820);
+      this.playTone(1850, 'sine', 0.09, 0.07, 0.16, 960);
+    }
+
+    cupSpill() {
+      this.playNoise(0.2, 1900, 0.26);
+      this.playTone(620, 'triangle', 0.12, 0, 0.18, 320);
+    }
+
+    bookFall() {
+      this.playNoise(0.12, 600, 0.28);
+      this.playTone(150, 'square', 0.1, 0, 0.2, 75);
+    }
+
+    scratch() {
+      this.playNoise(0.08, 2200, 0.22);
+      this.playTone(650, 'sawtooth', 0.06, 0, 0.12, 980);
+    }
+
+    alertOwner() {
+      this.playTone(660, 'square', 0.09, 0, 0.25, 880);
+      this.playTone(880, 'square', 0.16, 0.09, 0.25, 990);
+    }
+
+    combo(count) {
+      const base = Math.min(880, 440 + count * 55);
+      this.playTone(base, 'triangle', 0.1, 0, 0.2, base * 1.25);
+    }
+
+    victory() {
+      this.bark('happy');
+      const notes = [523.25, 659.25, 783.99, 1046.5];
+      notes.forEach((n, i) => {
+        this.playTone(n, 'triangle', 0.18, 0.15 + i * 0.11, 0.26);
+      });
+    }
+
+    fail() {
+      this.bark('whine');
+      const notes = [392, 349.23, 329.63, 261.63];
+      notes.forEach((n, i) => {
+        this.playTone(n, 'sawtooth', 0.22, 0.12 + i * 0.14, 0.22);
+      });
+    }
+
+    startBgm() {
+      this.stopBgm();
+      this.isPlayingBgm = true;
+      const melody = [
+        293.66, 369.99, 440.00, 369.99,
+        329.63, 392.00, 493.88, 392.00,
+        349.23, 440.00, 523.25, 440.00,
+        293.66, 369.99, 329.63, 246.94
+      ];
+      this.bgmTimer = setInterval(() => {
+        if (!this.isPlayingBgm || !this.saveManager.data.settings.bgm) return;
+        if (!this.ctx || this.ctx.state !== 'running') return;
+        const vol = this.getVolume();
+        if (vol <= 0.01) return;
+
+        const freq = melody[this.bgmStep % melody.length];
+        this.bgmStep++;
+
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, now);
+        gain.gain.setValueAtTime(vol * 0.055, now);
+        gain.gain.exponentialRampToValueAtTime(0.0008, now + 0.26);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.28);
+      }, 300);
+    }
+
+    stopBgm() {
+      this.isPlayingBgm = false;
+      if (this.bgmTimer) {
+        clearInterval(this.bgmTimer);
+        this.bgmTimer = null;
+      }
+    }
+  }
+
+  /* =========================================================================
+   * 3. InputManager - 鍵盤與多點觸控同步輸入管理
+   * ========================================================================= */
+  class InputManager {
+    constructor(audioManager) {
+      this.audio = audioManager;
+      this.keys = {};
+      this.touchActions = {
+        left: false,
+        right: false,
+        jump: false,
+        slap: false,
+        scratch: false,
+        dash: false,
+        interact: false
+      };
+      this.justPressed = {
+        jump: false,
+        slap: false,
+        scratch: false,
+        dash: false,
+        interact: false,
+        pause: false
+      };
+      this.bindEvents();
+    }
+
+    bindEvents() {
+      window.addEventListener('keydown', (e) => {
+        this.audio.initContext();
+        const code = e.code;
+        if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(code)) {
+          e.preventDefault();
+        }
+        if (!this.keys[code]) {
+          if (code === 'Space' || code === 'KeyW' || code === 'ArrowUp') this.justPressed.jump = true;
+          if (code === 'KeyJ') this.justPressed.slap = true;
+          if (code === 'KeyK') this.justPressed.scratch = true;
+          if (code === 'KeyL' || code === 'ShiftLeft' || code === 'ShiftRight') this.justPressed.dash = true;
+          if (code === 'KeyE') this.justPressed.interact = true;
+          if (code === 'Escape') this.justPressed.pause = true;
+        }
+        this.keys[code] = true;
+      });
+
+      window.addEventListener('keyup', (e) => {
+        this.keys[e.code] = false;
+      });
+
+      window.addEventListener('blur', () => {
+        this.keys = {};
+        Object.keys(this.touchActions).forEach(k => this.touchActions[k] = false);
+        document.querySelectorAll('.t-btn.pressed').forEach(b => b.classList.remove('pressed'));
+      });
+
+      const touchBtns = document.querySelectorAll('.t-btn');
+      touchBtns.forEach(btn => {
+        const action = btn.getAttribute('data-action');
+        const setPress = (pressed) => {
+          this.audio.initContext();
+          if (pressed && !this.touchActions[action]) {
+            if (this.justPressed.hasOwnProperty(action)) {
+              this.justPressed[action] = true;
+            }
+          }
+          this.touchActions[action] = pressed;
+          btn.classList.toggle('pressed', pressed);
+        };
+
+        btn.addEventListener('pointerdown', (e) => {
+          e.preventDefault();
+          btn.setPointerCapture(e.pointerId);
+          setPress(true);
+        });
+        btn.addEventListener('pointerup', (e) => {
+          e.preventDefault();
+          setPress(false);
+        });
+        btn.addEventListener('pointercancel', (e) => {
+          e.preventDefault();
+          setPress(false);
+        });
+      });
+    }
+
+    get left() {
+      return !!(this.keys['KeyA'] || this.keys['ArrowLeft'] || this.touchActions.left);
+    }
+
+    get right() {
+      return !!(this.keys['KeyD'] || this.keys['ArrowRight'] || this.touchActions.right);
+    }
+
+    get jumpHeld() {
+      return !!(this.keys['Space'] || this.keys['KeyW'] || this.keys['ArrowUp'] || this.touchActions.jump);
+    }
+
+    get scratchHeld() {
+      return !!(this.keys['KeyK'] || this.touchActions.scratch);
+    }
+
+    consumeJustPressed() {
+      const copy = Object.assign({}, this.justPressed);
+      for (const k in this.justPressed) {
+        this.justPressed[k] = false;
+      }
+      return copy;
+    }
+  }
+
+  /* =========================================================================
+   * 4. ParticleSystem & FloatingText - 視覺粒子特效與浮動連擊字體
+   * ========================================================================= */
+  class ParticleSystem {
+    constructor() {
+      this.particles = [];
+      this.floatingTexts = [];
+      this.noiseWaves = [];
+    }
+
+    clear() {
+      this.particles = [];
+      this.floatingTexts = [];
+      this.noiseWaves = [];
+    }
+
+    spawnDust(x, y, count = 4, color = '#e6dec8') {
+      if (this.particles.length > 150) return;
+      for (let i = 0; i < count; i++) {
+        this.particles.push({
+          x: x + (Math.random() - 0.5) * 16,
+          y: y + (Math.random() - 0.5) * 4,
+          vx: (Math.random() - 0.5) * 70,
+          vy: -Math.random() * 50 - 12,
+          size: 3 + Math.random() * 4,
+          color,
+          life: 0.35 + Math.random() * 0.2,
+          maxLife: 0.55,
+          gravity: 0
+        });
+      }
+    }
+
+    spawnShards(x, y, color1 = '#5bc0be', color2 = '#ffffff', count = 12) {
+      for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 60 + Math.random() * 190;
+        this.particles.push({
+          x,
+          y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed - 90,
+          size: 4 + Math.random() * 4,
+          color: i % 2 === 0 ? color1 : color2,
+          life: 0.6 + Math.random() * 0.4,
+          maxLife: 1.0,
+          gravity: 520
+        });
+      }
+    }
+
+    spawnSplash(x, y) {
+      for (let i = 0; i < 10; i++) {
+        this.particles.push({
+          x,
+          y,
+          vx: (Math.random() - 0.5) * 160,
+          vy: -Math.random() * 150 - 30,
+          size: 4 + Math.random() * 3,
+          color: '#4ea8de',
+          life: 0.45 + Math.random() * 0.25,
+          maxLife: 0.7,
+          gravity: 480
+        });
+      }
+    }
+
+    spawnNoiseWave(x, y, radius = 260) {
+      this.noiseWaves.push({
+        x,
+        y,
+        r: 10,
+        maxR: radius,
+        alpha: 0.75
+      });
+    }
+
+    spawnText(x, y, text, color = '#ff8c3b', scale = 1) {
+      this.floatingTexts.push({
+        x,
+        y,
+        text,
+        color,
+        scale,
+        vy: -55,
+        life: 1.05,
+        maxLife: 1.05
+      });
+    }
+
+    update(dt) {
+      for (let i = this.particles.length - 1; i >= 0; i--) {
+        const p = this.particles[i];
+        p.vy += (p.gravity || 0) * dt;
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.life -= dt;
+        if (p.life <= 0) this.particles.splice(i, 1);
+      }
+
+      for (let i = this.floatingTexts.length - 1; i >= 0; i--) {
+        const t = this.floatingTexts[i];
+        t.y += t.vy * dt;
+        t.life -= dt;
+        if (t.life <= 0) this.floatingTexts.splice(i, 1);
+      }
+
+      for (let i = this.noiseWaves.length - 1; i >= 0; i--) {
+        const nw = this.noiseWaves[i];
+        nw.r += 340 * dt;
+        nw.alpha = Math.max(0, 1 - nw.r / nw.maxR) * 0.65;
+        if (nw.r >= nw.maxR) this.noiseWaves.splice(i, 1);
+      }
+    }
+
+    draw(ctx) {
+      this.noiseWaves.forEach(nw => {
+        ctx.save();
+        ctx.strokeStyle = `rgba(255, 214, 102, ${nw.alpha})`;
+        ctx.lineWidth = 3;
+        ctx.setLineDash([6, 4]);
+        ctx.beginPath();
+        ctx.arc(nw.x, nw.y, nw.r, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      });
+
+      this.particles.forEach(p => {
+        const alpha = Math.max(0, p.life / p.maxLife);
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = p.color;
+        ctx.fillRect(Math.round(p.x - p.size / 2), Math.round(p.y - p.size / 2), Math.round(p.size), Math.round(p.size));
+        ctx.restore();
+      });
+
+      this.floatingTexts.forEach(t => {
+        const alpha = Math.max(0, t.life / t.maxLife);
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.font = `900 ${Math.round(16 * t.scale)}px "PingFang TC", "Microsoft JhengHei", sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = '#2d1b0e';
+        ctx.strokeText(t.text, t.x, t.y);
+        ctx.fillStyle = t.color;
+        ctx.fillText(t.text, t.x, t.y);
+        ctx.restore();
+      });
+    }
+  }
+
+  /* =========================================================================
+   * 5. ComboSystem - 連擊倍率與計分系統
+   * ========================================================================= */
+  class ComboSystem {
+    constructor(audio, particles) {
+      this.audio = audio;
+      this.particles = particles;
+      this.reset();
+    }
+
+    reset() {
+      this.count = 0;
+      this.maxCombo = 0;
+      this.timer = 0;
+      this.maxTimer = 3.8;
+    }
+
+    getMultiplier() {
+      if (this.count >= 8) return 3.0;
+      if (this.count >= 5) return 2.0;
+      if (this.count >= 3) return 1.5;
+      if (this.count >= 2) return 1.2;
+      return 1.0;
+    }
+
+    registerHit(baseScore, x, y, label = '') {
+      this.count++;
+      if (this.count > this.maxCombo) this.maxCombo = this.count;
+      this.timer = this.maxTimer;
+
+      const mult = this.getMultiplier();
+      const finalScore = Math.round(baseScore * mult);
+
+      if (this.count >= 2) {
+        this.audio.combo(this.count);
+      }
+
+      const txt = this.count >= 2
+        ? `${label} +${finalScore} (${this.count}連擊 x${mult.toFixed(1)}!)`
+        : `${label} +${finalScore}`;
+      this.particles.spawnText(x, y - 18, txt, this.count >= 3 ? '#ffd166' : '#ff9f1c', this.count >= 3 ? 1.18 : 1.0);
+
+      return finalScore;
+    }
+
+    onCaughtPenalty() {
+      this.count = 0;
+      this.timer = 0;
+    }
+
+    update(dt) {
+      if (this.timer > 0) {
+        this.timer -= dt;
+        if (this.timer <= 0) {
+          this.timer = 0;
+          this.count = 0;
+        }
+      }
+    }
+  }
+
+  /* =========================================================================
+   * 6. ShibaPlayer - 原創像素風柴犬「咖呲」角色與 10+ 專屬動作狀態機
+   * ========================================================================= */
+  class ShibaPlayer {
+    constructor(x, y, skills) {
+      this.spawnX = x;
+      this.spawnY = y;
+      this.w = 46;
+      this.h = 38;
+      this.skills = skills;
+      this.reset();
+    }
+
+    reset() {
+      this.x = this.spawnX;
+      this.y = this.spawnY;
+      this.vx = 0;
+      this.vy = 0;
+      this.facing = 1; // 1 right, -1 left
+      this.onGround = false;
+      this.coyoteTimer = 0;
+      this.jumpBufferTimer = 0;
+      this.airJumpsLeft = this.skills.doubleJump ? 1 : 0;
+
+      // States: idle, walk, run, jump, fall, bump, scratch, hide, startled, victory
+      this.state = 'idle';
+      this.animTimer = 0;
+      this.actionTimer = 0;
+      this.dashTimer = 0;
+      this.dashCooldown = 0;
+      this.powerCooldown = 0;
+      this.isHidden = false;
+      this.hideSpot = null;
+      this.startledTimer = 0;
+      this.invulnTimer = 0;
+      this.onSlippery = false;
+
+      // 柴犬專屬：聞零食抽動鼻子、興奮快速搖尾、咬拖鞋、拉衛生紙捲
+      this.isSniffing = false;
+      this.isExcited = false;
+      this.carriedSlipper = null;
+      this.activeTpRoll = null;
+    }
+
+    update(dt, input, justPressed, level, audio, particles) {
+      this.animTimer += dt;
+      if (this.dashCooldown > 0) this.dashCooldown = Math.max(0, this.dashCooldown - dt);
+      if (this.powerCooldown > 0) this.powerCooldown = Math.max(0, this.powerCooldown - dt);
+      if (this.invulnTimer > 0) this.invulnTimer = Math.max(0, this.invulnTimer - dt);
+
+      if (this.state === 'victory') return;
+
+      // 被主人發現時：耳朵後收（飛機耳）、無辜表情動畫，隨後返回安全點
+      if (this.startledTimer > 0) {
+        this.startledTimer -= dt;
+        this.state = 'startled';
+        if (this.carriedSlipper) {
+          this.carriedSlipper.isCarried = false;
+          this.carriedSlipper = null;
+        }
+        if (this.activeTpRoll) {
+          this.activeTpRoll.isPulling = false;
+          this.activeTpRoll = null;
+        }
+        if (this.startledTimer <= 0) {
+          this.x = this.spawnX;
+          this.y = this.spawnY;
+          this.vx = 0;
+          this.vy = 0;
+          this.isHidden = false;
+          this.hideSpot = null;
+          this.invulnTimer = 2.0;
+          this.state = 'idle';
+          particles.spawnText(this.x + this.w / 2, this.y - 10, '咖呲溜回安全起點！', '#7bf1a8', 1.0);
+        }
+        return;
+      }
+
+      // 檢查是否靠近食物/餅乾罐，觸發聞味道鼻子抽動與興奮快速搖尾巴
+      const nearSnack = level.checkNearSnack(this);
+      this.isSniffing = nearSnack;
+      this.isExcited = nearSnack || !!this.carriedSlipper || !!this.activeTpRoll;
+
+      // 躲藏或進入狗窩終點 (按 E)
+      if (justPressed.interact) {
+        if (this.isHidden) {
+          this.isHidden = false;
+          this.hideSpot = null;
+          this.state = 'idle';
+          audio.jump(false);
+          particles.spawnDust(this.x + this.w / 2, this.y + this.h, 5);
+          return;
+        } else {
+          if (level.canExitAtBed(this)) {
+            level.triggerVictory();
+            return;
+          }
+          const spot = level.findNearbyHidingSpot(this);
+          if (spot) {
+            if (this.carriedSlipper) {
+              this.carriedSlipper.isCarried = false;
+              this.carriedSlipper = null;
+            }
+            if (this.activeTpRoll) {
+              this.activeTpRoll.isPulling = false;
+              this.activeTpRoll = null;
+            }
+            this.isHidden = true;
+            this.hideSpot = spot;
+            this.x = spot.x + (spot.w - this.w) / 2;
+            this.y = spot.y + spot.h - this.h;
+            this.vx = 0;
+            this.vy = 0;
+            this.state = 'hide';
+            audio.land();
+            particles.spawnDust(this.x + this.w / 2, this.y + this.h, 6);
+            particles.spawnText(this.x + this.w / 2, this.y - 10, '咖呲躲好了 (按 E 離開)', '#7bf1a8', 0.95);
+            return;
+          }
+        }
+      }
+
+      // 躲藏中狀態
+      if (this.isHidden) {
+        this.state = 'hide';
+        if (justPressed.jump) {
+          this.isHidden = false;
+          this.hideSpot = null;
+        } else {
+          return;
+        }
+      }
+
+      // 技能一：咖呲衝撞 (L / Shift)
+      if (justPressed.dash && this.dashCooldown <= 0 && this.dashTimer <= 0) {
+        this.dashTimer = 0.21;
+        this.dashCooldown = 1.5;
+        this.vx = this.facing * 530;
+        this.vy = 0;
+        this.state = 'run';
+        audio.dash();
+        particles.spawnDust(this.x + this.w / 2, this.y + this.h, 8);
+      }
+
+      // 鼻子頂撞 / 超級狗掌 / 咬拖鞋 / 咬衛生紙 (J)
+      if (justPressed.slap && this.actionTimer <= 0) {
+        const usePower = this.skills.powerSlap && this.powerCooldown <= 0;
+        if (usePower) {
+          this.powerCooldown = 2.8;
+        }
+        this.actionTimer = 0.25;
+        this.state = 'bump';
+        audio.pawHit(usePower);
+        level.performShibaBumpOrBite(this, usePower);
+      }
+
+      // 前腳抓撓沙發 / 拉扯窗簾 (K)
+      let isScratchingNow = false;
+      if (input.scratchHeld && this.dashTimer <= 0) {
+        isScratchingNow = level.performShibaScratch(this, dt);
+      }
+
+      // 水平移動（具慣性與廚房濕滑地板支援）
+      const maxSpeed = 260;
+      const accel = this.onSlippery ? 520 : 1580;
+      const friction = this.onSlippery ? 260 : 1420;
+
+      if (this.dashTimer > 0) {
+        this.dashTimer -= dt;
+        this.vx = this.facing * 530;
+        level.checkDashBump(this);
+      } else {
+        if (input.left) {
+          this.facing = -1;
+          this.vx -= accel * dt;
+        } else if (input.right) {
+          this.facing = 1;
+          this.vx += accel * dt;
+        } else {
+          if (Math.abs(this.vx) <= friction * dt) {
+            this.vx = 0;
+          } else {
+            this.vx -= Math.sign(this.vx) * friction * dt;
+          }
+        }
+        this.vx = Math.max(-maxSpeed, Math.min(maxSpeed, this.vx));
+      }
+
+      // 土狼時間 (Coyote Time) 與 跳躍輸入緩衝 (Jump Buffer)
+      if (this.onGround) {
+        this.coyoteTimer = 0.12;
+        this.airJumpsLeft = this.skills.doubleJump ? 1 : 0;
+      } else {
+        this.coyoteTimer = Math.max(0, this.coyoteTimer - dt);
+      }
+
+      if (justPressed.jump) {
+        this.jumpBufferTimer = 0.12;
+      } else {
+        this.jumpBufferTimer = Math.max(0, this.jumpBufferTimer - dt);
+      }
+
+      // 執行跳躍或技能三：柴犬彈跳 (二段跳)
+      if (this.jumpBufferTimer > 0) {
+        if (this.coyoteTimer > 0) {
+          this.vy = -565;
+          this.onGround = false;
+          this.coyoteTimer = 0;
+          this.jumpBufferTimer = 0;
+          audio.jump(false);
+          particles.spawnDust(this.x + this.w / 2, this.y + this.h, 5);
+        } else if (this.airJumpsLeft > 0) {
+          this.airJumpsLeft--;
+          this.vy = -520;
+          this.jumpBufferTimer = 0;
+          audio.jump(true);
+          particles.spawnDust(this.x + this.w / 2, this.y + this.h, 8, '#ffd166');
+          particles.spawnText(this.x + this.w / 2, this.y, '柴犬彈跳！', '#ffd166', 0.9);
+        }
+      }
+
+      // 重力
+      if (this.dashTimer <= 0) {
+        this.vy += 1350 * dt;
+        if (this.vy > 780) this.vy = 780;
+      }
+
+      // 移動與碰撞判定
+      const prevOnGround = this.onGround;
+      this.moveAndCollide(dt, level);
+
+      if (!prevOnGround && this.onGround) {
+        audio.land();
+        particles.spawnDust(this.x + this.w / 2, this.y + this.h, 4);
+      }
+
+      if (this.onGround && Math.abs(this.vx) > 160 && Math.random() < 0.25) {
+        particles.spawnDust(this.x + this.w / 2, this.y + this.h, 1);
+      }
+
+      // 判定當前動畫狀態
+      if (this.actionTimer > 0) {
+        this.actionTimer -= dt;
+        this.state = 'bump';
+      } else if (isScratchingNow) {
+        this.state = 'scratch';
+      } else if (this.dashTimer > 0) {
+        this.state = 'run';
+      } else if (!this.onGround) {
+        this.state = this.vy < 0 ? 'jump' : 'fall';
+      } else if (Math.abs(this.vx) > 15) {
+        this.state = Math.abs(this.vx) > 195 ? 'run' : 'walk';
+      } else {
+        this.state = 'idle';
+      }
+
+      // 自動檢測是否抵達發光狗窩過關
+      if (level.canExitAtBed(this)) {
+        level.triggerVictory();
+      }
+    }
+
+    moveAndCollide(dt, level) {
+      this.x += this.vx * dt;
+      if (this.x < 20) {
+        this.x = 20;
+        this.vx = 0;
+      }
+      if (this.x + this.w > level.worldWidth - 20) {
+        this.x = level.worldWidth - 20 - this.w;
+        this.vx = 0;
+      }
+
+      const oldBottom = this.y + this.h;
+      this.y += this.vy * dt;
+      this.onGround = false;
+      this.onSlippery = false;
+
+      if (this.y + this.h >= level.floorY) {
+        this.y = level.floorY - this.h;
+        this.vy = 0;
+        this.onGround = true;
+      }
+
+      if (this.vy >= 0) {
+        for (const plat of level.platforms) {
+          const withinX = this.x + this.w - 6 > plat.x && this.x + 6 < plat.x + plat.w;
+          if (withinX && oldBottom <= plat.y + 10 && this.y + this.h >= plat.y) {
+            this.y = plat.y - this.h;
+            this.vy = 0;
+            this.onGround = true;
+            break;
+          }
+        }
+      }
+
+      if (this.onGround) {
+        for (const puddle of level.puddles) {
+          if (this.x + this.w > puddle.x && this.x < puddle.x + puddle.w && Math.abs((this.y + this.h) - puddle.y) < 8) {
+            this.onSlippery = true;
+            break;
+          }
+        }
+      }
+
+      // 推動地板上的狗狗玩具球
+      for (const obj of level.objects) {
+        if (obj.type === 'toy_ball' && !obj.destroyed) {
+          const overlapX = this.x + this.w > obj.x && this.x < obj.x + obj.w;
+          const overlapY = this.y + this.h > obj.y && this.y < obj.y + obj.h;
+          if (overlapX && overlapY && Math.abs(this.vx) > 20) {
+            obj.kick(this.facing, Math.abs(this.vx) * 1.35, level);
+          }
+        }
+      }
+
+      if (isNaN(this.x) || isNaN(this.y) || this.y > level.floorY + 120) {
+        this.x = this.spawnX;
+        this.y = this.spawnY;
+        this.vx = 0;
+        this.vy = 0;
+      }
+    }
+
+    draw(ctx) {
+      if (this.invulnTimer > 0 && Math.floor(this.invulnTimer * 12) % 2 === 0) {
+        ctx.save();
+        ctx.globalAlpha = 0.55;
+        this.renderShibaSprite(ctx);
+        ctx.restore();
+      } else {
+        this.renderShibaSprite(ctx);
+      }
+    }
+
+    renderShibaSprite(ctx) {
+      ctx.save();
+      const cx = Math.round(this.x + this.w / 2);
+      const cy = Math.round(this.y + this.h / 2);
+
+      // 8. 躲藏狀態：在大型紙箱、桌底或沙發後露出柴犬三角立耳與明亮雙眼
+      if (this.state === 'hide') {
+        // 立耳
+        ctx.fillStyle = '#d47a22';
+        ctx.beginPath();
+        ctx.moveTo(cx - 13, cy + 2);
+        ctx.lineTo(cx - 8, cy - 8);
+        ctx.lineTo(cx - 3, cy + 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(cx + 3, cy + 2);
+        ctx.lineTo(cx + 8, cy - 8);
+        ctx.lineTo(cx + 13, cy + 2);
+        ctx.fill();
+        // 奶油白眉點與明亮黑眼
+        const blink = Math.sin(this.animTimer * 4) > -0.85;
+        ctx.fillStyle = '#fff8eb';
+        ctx.fillRect(cx - 8, cy + 2, 4, 2);
+        ctx.fillRect(cx + 4, cy + 2, 4, 2);
+        if (blink) {
+          ctx.fillStyle = '#1a120b';
+          ctx.fillRect(cx - 8, cy + 5, 4, 4);
+          ctx.fillRect(cx + 4, cy + 5, 4, 4);
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(cx - 7, cy + 5, 2, 2);
+          ctx.fillRect(cx + 5, cy + 5, 2, 2);
+        }
+        ctx.restore();
+        return;
+      }
+
+      ctx.translate(cx, cy);
+      const spinDir = this.state === 'victory' ? (Math.sin(this.animTimer * 10) >= 0 ? 1 : -1) : this.facing;
+      ctx.scale(spinDir, 1);
+
+      const t = this.animTimer;
+      let bobY = 0;
+      let legOffset = 0;
+      let earBounce = 0;
+      let headNudgeX = 0;
+      let noseTwitchY = this.isSniffing ? Math.round(Math.sin(t * 28) * 1.5) : 0;
+      const wagSpeed = (this.isExcited || this.state === 'victory') ? 24 : 8;
+      let tailWag = Math.sin(t * wagSpeed) * 0.38;
+
+      if (this.state === 'idle') {
+        bobY = Math.round(Math.sin(t * 4) * 1.5);
+      } else if (this.state === 'walk' || this.state === 'run') {
+        const spd = this.state === 'run' ? 18 : 11;
+        bobY = Math.round(Math.abs(Math.sin(t * spd)) * -3);
+        legOffset = Math.round(Math.sin(t * spd) * 6);
+        earBounce = this.state === 'run' ? Math.round(Math.sin(t * spd) * 2) : 0;
+        tailWag = Math.sin(t * (spd * 1.4)) * 0.5;
+      } else if (this.state === 'jump') {
+        bobY = -3;
+        legOffset = -4;
+        earBounce = -2;
+      } else if (this.state === 'fall') {
+        bobY = 1;
+        legOffset = 4;
+        earBounce = 2;
+      } else if (this.state === 'bump') {
+        headNudgeX = 6;
+        bobY = -1;
+      } else if (this.state === 'scratch') {
+        bobY = Math.round(Math.sin(t * 35) * 1.5);
+      } else if (this.state === 'victory') {
+        bobY = Math.round(Math.abs(Math.sin(t * 12)) * -9);
+      } else if (this.state === 'startled') {
+        bobY = 2;
+      }
+
+      // 地面陰影
+      ctx.fillStyle = 'rgba(0,0,0,0.22)';
+      ctx.fillRect(-18, 16, 36, 4);
+
+      // 柴犬標誌性「捲尾巴」(Curled Fluffy Shiba Tail)
+      ctx.save();
+      ctx.translate(-15, -4 + bobY);
+      ctx.rotate(tailWag);
+      // 外圈黃褐色毛
+      ctx.fillStyle = '#e08e36';
+      ctx.fillRect(-9, -11, 12, 11);
+      // 內圈奶油白毛與捲曲孔洞
+      ctx.fillStyle = '#fff8eb';
+      ctx.fillRect(-10, -9, 5, 7);
+      ctx.fillStyle = '#b86214';
+      ctx.fillRect(-4, -7, 4, 4);
+      ctx.restore();
+
+      // 後側四肢 (遠端腿)
+      ctx.fillStyle = '#c46d19';
+      if (this.state === 'jump') {
+        ctx.fillRect(-15, 9 + bobY, 6, 9);
+        ctx.fillRect(8, 5 + bobY, 6, 8);
+      } else {
+        ctx.fillRect(-14 - legOffset, 8 + bobY, 6, 10);
+        ctx.fillRect(6 + legOffset, 8 + bobY, 6, 10);
+      }
+
+      // 柴犬結實身體 (黃褐色背毛 + 奶油白胸腹毛 Urajiro)
+      ctx.fillStyle = '#e08e36';
+      ctx.fillRect(-16, -4 + bobY, 28, 15);
+      // 奶油白色胸腹毛 (Urajiro)
+      ctx.fillStyle = '#fff8eb';
+      ctx.fillRect(-10, 5 + bobY, 22, 6);
+      ctx.fillRect(6, -1 + bobY, 8, 10);
+      // 紅色小項圈與金色小鈴鐺/名牌
+      ctx.fillStyle = '#d62828';
+      ctx.fillRect(5, -4 + bobY, 4, 13);
+      ctx.fillStyle = '#ffd166';
+      ctx.fillRect(8, 3 + bobY, 4, 4);
+
+      // 前側四肢 (近端腿 + 奶油白小狗襪)
+      ctx.fillStyle = '#e08e36';
+      const frontLegY = this.state === 'scratch' ? Math.round(Math.sin(t * 45) * 4) : 0;
+      ctx.fillRect(-11 + legOffset, 9 + bobY, 6, 9);
+      ctx.fillRect(8 - legOffset, 9 + bobY + frontLegY, 6, 9);
+      ctx.fillStyle = '#fff8eb';
+      ctx.fillRect(-11 + legOffset, 15 + bobY, 6, 3);
+      ctx.fillRect(8 - legOffset, 15 + bobY + frontLegY, 6, 3);
+
+      // 圓潤可愛的柴犬頭部
+      const hx = 2 + headNudgeX;
+      const hy = -15 + bobY;
+      ctx.fillStyle = '#e08e36';
+      ctx.fillRect(hx, hy, 20, 16);
+
+      // 柴犬臉頰與吻部奶油白毛 (Urajiro Cheeks & Muzzle)
+      ctx.fillStyle = '#fff8eb';
+      ctx.fillRect(hx + 6, hy + 8, 16, 8);
+      ctx.fillRect(hx + 16, hy + 5, 8, 8);
+      // 柴犬招牌白豆眉 (Shiba Eyebrow Dots)
+      ctx.fillRect(hx + 7, hy + 3, 3, 2);
+      ctx.fillRect(hx + 14, hy + 3, 3, 2);
+
+      // 三角形直立耳朵（被發現時呈現無辜後收「飛機耳」）
+      ctx.fillStyle = '#c46d19';
+      if (this.state === 'startled') {
+        // 飛機耳後收
+        ctx.fillRect(hx - 4, hy + 1, 9, 4);
+        ctx.fillRect(hx + 8, hy + 1, 8, 4);
+      } else {
+        // 精神抖擻的三角形直立耳
+        ctx.beginPath();
+        ctx.moveTo(hx + 2, hy + 1);
+        ctx.lineTo(hx + 5, hy - 7 + earBounce);
+        ctx.lineTo(hx + 9, hy + 1);
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.moveTo(hx + 11, hy + 1);
+        ctx.lineTo(hx + 15, hy - 7 + earBounce);
+        ctx.lineTo(hx + 18, hy + 1);
+        ctx.fill();
+
+        // 內耳淺奶油粉
+        ctx.fillStyle = '#f7d6c4';
+        ctx.fillRect(hx + 4, hy - 3 + earBounce, 3, 3);
+        ctx.fillRect(hx + 14, hy - 3 + earBounce, 3, 3);
+      }
+
+      // 黑色圓鼻頭（聞東西時會上下抽動）
+      ctx.fillStyle = '#1a120b';
+      ctx.fillRect(hx + 21, hy + 5 + noseTwitchY, 4, 3);
+
+      // 開心時或奔跑慶祝時張嘴吐出粉紅小舌頭
+      const showTongue = this.state === 'idle' || this.state === 'run' || this.state === 'victory' || this.isExcited;
+      if (showTongue && this.state !== 'startled' && !this.carriedSlipper) {
+        ctx.fillStyle = '#ff758f';
+        const tongueLen = Math.round(4 + Math.sin(t * 10) * 1.5);
+        ctx.fillRect(hx + 19, hy + 12, 4, tongueLen);
+      }
+
+      // 明亮的黑色眼睛與眼神光
+      if (this.state === 'startled') {
+        // 被主人抓包時的無辜大眼
+        ctx.fillStyle = '#1a120b';
+        ctx.fillRect(hx + 7, hy + 5, 4, 5);
+        ctx.fillRect(hx + 14, hy + 5, 4, 5);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(hx + 8, hy + 6, 2, 2);
+        ctx.fillRect(hx + 15, hy + 6, 2, 2);
+      } else if (this.state === 'victory') {
+        // 開心笑瞇眼 ^_^
+        ctx.fillStyle = '#1a120b';
+        ctx.fillRect(hx + 7, hy + 6, 4, 2);
+        ctx.fillRect(hx + 14, hy + 6, 4, 2);
+      } else {
+        const isBlink = this.state === 'idle' && Math.sin(t * 3.2) < -0.94;
+        ctx.fillStyle = '#1a120b';
+        if (isBlink) {
+          ctx.fillRect(hx + 7, hy + 7, 4, 2);
+          ctx.fillRect(hx + 14, hy + 7, 4, 2);
+        } else {
+          ctx.fillRect(hx + 7, hy + 5, 3, 4);
+          ctx.fillRect(hx + 14, hy + 5, 3, 4);
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(hx + 8, hy + 5, 1, 2);
+          ctx.fillRect(hx + 15, hy + 5, 1, 2);
+        }
+      }
+
+      // 如果嘴裡正咬著拖鞋，繪製咬在嘴邊的拖鞋
+      if (this.carriedSlipper) {
+        ctx.fillStyle = this.carriedSlipper.color || '#ff6b8b';
+        ctx.fillRect(hx + 18, hy + 10, 16, 6);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(hx + 21, hy + 8, 7, 4);
+      }
+
+      // 鼻子頂撞或前腳抓撓時的動態特效線
+      if (this.state === 'bump' || this.state === 'scratch') {
+        const swipeY = this.state === 'scratch' ? Math.sin(t * 45) * 6 : 0;
+        ctx.strokeStyle = '#ffd166';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(24, -8 + swipeY);
+        ctx.lineTo(35, -2 + swipeY);
+        ctx.moveTo(24, -1 + swipeY);
+        ctx.lineTo(36, 5 + swipeY);
+        ctx.stroke();
+      }
+
+      // 聞到食物時的香噴噴氣息符號
+      if (this.isSniffing) {
+        ctx.fillStyle = '#ffd166';
+        ctx.font = '900 11px "PingFang TC", sans-serif';
+        ctx.fillText('嗅嗅~香!', 14, -22);
+      }
+
+      ctx.restore();
+    }
+  }
+
+  /* =========================================================================
+   * 7. DestructibleObject - 柴犬可互動物件（花瓶、水杯、沙發、窗簾、書本、拖鞋、衛生紙、玩具球）
+   * ========================================================================= */
+  class DestructibleObject {
+    constructor(cfg) {
+      this.id = cfg.id;
+      // Types: 'vase', 'cup', 'plate', 'jar', 'book', 'sofa', 'curtain', 'slipper', 'tp_roll', 'toy_ball'
+      this.type = cfg.type;
+      this.name = cfg.name;
+      this.x = cfg.x;
+      this.y = cfg.y;
+      this.w = cfg.w;
+      this.h = cfg.h;
+      this.score = cfg.score || 120;
+      this.color = cfg.color || '#4ea8de';
+
+      this.isPushable = ['vase', 'cup', 'plate', 'jar', 'book'].includes(this.type);
+      this.isScratchable = ['sofa', 'curtain'].includes(this.type);
+
+      this.vx = 0;
+      this.vy = 0;
+      this.rotation = 0;
+      this.pushed = false;
+      this.falling = false;
+      this.destroyed = false;
+
+      // 沙發抓撓 / 窗簾拉扯進度
+      this.scratchProgress = 0;
+      this.scratchMax = cfg.scratchMax || 1.25;
+      this.swayTimer = 0;
+
+      // 咬拖鞋專屬狀態
+      this.isCarried = false;
+      this.carryDist = 0;
+      this.carryTargetDist = 170;
+
+      // 衛生紙大災難專屬狀態
+      this.isPulling = false;
+      this.unrolledLength = 0;
+      this.maxUnrollLength = 280;
+      this.trailSegments = [];
+      this.lastSegmentX = this.x;
+
+      // 狗狗玩具球專屬狀態
+      this.bouncesScored = 0;
+    }
+
+    push(dir, forceScale = 1.0) {
+      if (this.destroyed || !this.isPushable) return false;
+      this.pushed = true;
+      this.vx = dir * (140 + Math.random() * 45) * forceScale;
+      this.vy = -125 * forceScale;
+      return true;
+    }
+
+    kick(dir, speed, level) {
+      if (this.type !== 'toy_ball') return false;
+      this.vx = dir * Math.max(210, speed);
+      this.vy = -190;
+      if (this.bouncesScored < 3) {
+        this.bouncesScored++;
+        const gained = level.combo.registerHit(65, this.x, this.y, '頂玩具球');
+        level.score += gained;
+        level.audio.bark('short');
+        if (this.bouncesScored === 1) {
+          level.destroyedCount++;
+        }
+      }
+      return true;
+    }
+
+    scratch(dt, speedMult = 1.0) {
+      if (this.destroyed || !this.isScratchable) return false;
+      this.scratchProgress += dt * speedMult;
+      this.swayTimer = 0.35;
+      if (this.scratchProgress >= this.scratchMax) {
+        this.scratchProgress = this.scratchMax;
+        this.destroyed = true;
+        return 'destroyed';
+      }
+      return 'scratching';
+    }
+
+    update(dt, level) {
+      if (this.swayTimer > 0) {
+        this.swayTimer = Math.max(0, this.swayTimer - dt);
+      }
+
+      // 1. 拖鞋互動：咖呲咬住拖鞋奔跑一段距離後甩飛計分
+      if (this.type === 'slipper') {
+        if (this.isCarried && level.shiba.carriedSlipper === this) {
+          const shiba = level.shiba;
+          const prevX = this.x;
+          this.x = shiba.x + (shiba.facing === 1 ? shiba.w - 6 : -10);
+          this.y = shiba.y + 10;
+          this.carryDist += Math.abs(this.x - prevX);
+
+          if (this.carryDist >= this.carryTargetDist && !this.destroyed) {
+            this.isCarried = false;
+            shiba.carriedSlipper = null;
+            this.destroyed = true;
+            this.y = level.floorY - this.h;
+            level.onObjectBroken(this);
+          }
+        } else if (!this.destroyed && this.y + this.h < level.floorY) {
+          this.vy += 900 * dt;
+          this.y = Math.min(level.floorY - this.h, this.y + this.vy * dt);
+        }
+        return;
+      }
+
+      // 2. 衛生紙捲互動：咖呲咬住紙端奔跑，在地上留下長長白色紙帶並逐步計分
+      if (this.type === 'tp_roll') {
+        if (this.isPulling && level.shiba.activeTpRoll === this && !this.destroyed) {
+          const shiba = level.shiba;
+          const distStep = Math.abs(shiba.vx * dt);
+          if (distStep > 0.5) {
+            this.unrolledLength += distStep;
+            if (Math.abs(shiba.x - this.lastSegmentX) >= 16) {
+              this.trailSegments.push({
+                x: Math.min(shiba.x, this.lastSegmentX),
+                w: Math.abs(shiba.x - this.lastSegmentX) + 8,
+                y: level.floorY
+              });
+              this.lastSegmentX = shiba.x;
+              level.audio.tpUnroll();
+              const stepPts = level.combo.registerHit(45, shiba.x, shiba.y, '拉扯衛生紙');
+              level.score += stepPts;
+            }
+            if (this.unrolledLength >= this.maxUnrollLength) {
+              this.isPulling = false;
+              shiba.activeTpRoll = null;
+              this.destroyed = true;
+              level.onObjectBroken(this);
+            }
+          }
+        }
+        return;
+      }
+
+      // 3. 狗狗玩具球物理滾動與反彈
+      if (this.type === 'toy_ball') {
+        this.x += this.vx * dt;
+        this.vy += 880 * dt;
+        this.y += this.vy * dt;
+        this.rotation += this.vx * 0.05 * dt;
+
+        if (this.x < 30) {
+          this.x = 30;
+          this.vx = -this.vx * 0.75;
+        } else if (this.x + this.w > level.worldWidth - 30) {
+          this.x = level.worldWidth - 30 - this.w;
+          this.vx = -this.vx * 0.75;
+        }
+
+        if (this.y + this.h >= level.floorY) {
+          this.y = level.floorY - this.h;
+          if (Math.abs(this.vy) > 90) {
+            this.vy = -this.vy * 0.58;
+          } else {
+            this.vy = 0;
+          }
+          this.vx *= 0.96;
+        }
+        return;
+      }
+
+      // 4. 桌面/書架上的可推落物件（花瓶、水杯、碗盤、餅乾罐、書本）
+      if (!this.isPushable || this.destroyed) return;
+
+      let supported = false;
+      if (this.y + this.h >= level.floorY - 2) {
+        supported = true;
+      } else if (this.vy >= 0) {
+        for (const plat of level.platforms) {
+          const overlapX = this.x + this.w * 0.65 > plat.x && this.x + this.w * 0.35 < plat.x + plat.w;
+          if (overlapX && Math.abs((this.y + this.h) - plat.y) <= 8) {
+            supported = true;
+            break;
+          }
+        }
+      }
+
+      if (this.pushed || !supported) {
+        this.x += this.vx * dt;
+        if (!supported || this.vy < 0) {
+          this.falling = true;
+          this.vy += 980 * dt;
+          this.y += this.vy * dt;
+          this.rotation += (this.vx > 0 ? 5 : -5) * dt;
+        } else {
+          this.vx *= 0.92;
+        }
+
+        // 書本與桌面物品骨牌連鎖碰撞
+        for (const other of level.objects) {
+          if (other !== this && other.isPushable && !other.destroyed && !other.pushed) {
+            if (Math.abs(this.y - other.y) < 30 &&
+                this.x < other.x + other.w &&
+                this.x + this.w > other.x) {
+              const dir = this.vx >= 0 ? 1 : -1;
+              other.push(dir, 0.88);
+            }
+          }
+        }
+
+        // 落地才真正碎裂並計分
+        if (this.y + this.h >= level.floorY) {
+          this.y = level.floorY - this.h;
+          this.vx = 0;
+          this.vy = 0;
+          if (this.falling || this.pushed) {
+            this.destroyed = true;
+            level.onObjectBroken(this);
+          }
+        }
+      }
+    }
+
+    draw(ctx) {
+      ctx.save();
+
+      // 沙發
+      if (this.type === 'sofa') {
+        ctx.fillStyle = '#8e412e';
+        ctx.fillRect(this.x + 8, this.y - 26, this.w - 16, 28);
+        ctx.fillStyle = '#b5533c';
+        ctx.fillRect(this.x, this.y - 12, this.w, 26);
+        ctx.fillStyle = '#783322';
+        ctx.fillRect(this.x - 4, this.y - 20, 14, 34);
+        ctx.fillRect(this.x + this.w - 10, this.y - 20, 14, 34);
+        ctx.fillStyle = '#3b2010';
+        ctx.fillRect(this.x + 6, this.y + 14, 8, 10);
+        ctx.fillRect(this.x + this.w - 14, this.y + 14, 8, 10);
+
+        const ratio = this.scratchProgress / this.scratchMax;
+        if (ratio > 0.1) {
+          ctx.strokeStyle = '#f4d58d';
+          ctx.lineWidth = 2;
+          const marks = Math.ceil(ratio * 6);
+          for (let i = 0; i < marks; i++) {
+            const mx = this.x + 22 + i * 20;
+            ctx.beginPath();
+            ctx.moveTo(mx, this.y - 18);
+            ctx.lineTo(mx - 6, this.y + 6);
+            ctx.moveTo(mx + 5, this.y - 18);
+            ctx.lineTo(mx - 1, this.y + 6);
+            ctx.stroke();
+          }
+        }
+        if (this.destroyed) {
+          ctx.fillStyle = '#fffdf7';
+          ctx.fillRect(this.x + 36, this.y - 14, 10, 8);
+          ctx.fillRect(this.x + 88, this.y - 10, 12, 8);
+        } else if (ratio > 0 && ratio < 1) {
+          this.drawProgressBar(ctx, this.x + this.w / 2 - 28, this.y - 40, 56, 7, ratio);
+        }
+        ctx.restore();
+        return;
+      }
+
+      // 窗簾
+      if (this.type === 'curtain') {
+        const sway = this.swayTimer > 0 ? Math.sin(performance.now() * 0.04) * 5 : 0;
+        ctx.translate(sway, 0);
+        ctx.fillStyle = '#4a2c11';
+        ctx.fillRect(this.x - 8, this.y - 6, this.w + 16, 6);
+
+        const ratio = this.scratchProgress / this.scratchMax;
+        ctx.fillStyle = this.color || '#d96b43';
+        if (!this.destroyed) {
+          ctx.fillRect(this.x, this.y, this.w, this.h);
+          ctx.fillStyle = 'rgba(0,0,0,0.15)';
+          for (let x = this.x + 8; x < this.x + this.w; x += 14) {
+            ctx.fillRect(x, this.y, 4, this.h);
+          }
+          if (ratio > 0.2) {
+            ctx.fillStyle = '#2b2018';
+            ctx.fillRect(this.x + 10, this.y + 35, this.w - 20, 4);
+          }
+          if (ratio > 0.55) {
+            ctx.fillRect(this.x + 6, this.y + 70, this.w - 14, 6);
+          }
+          if (ratio > 0 && ratio < 1) {
+            this.drawProgressBar(ctx, this.x + this.w / 2 - 26, this.y - 18, 52, 7, ratio);
+          }
+        } else {
+          for (let i = 0; i < 4; i++) {
+            ctx.fillRect(this.x + i * 14, this.y, 8, this.h * (0.45 + (i % 2) * 0.25));
+          }
+        }
+        ctx.restore();
+        return;
+      }
+
+      // 拖鞋 (Slipper)
+      if (this.type === 'slipper') {
+        if (this.isCarried) {
+          this.drawProgressBar(ctx, this.x - 12, this.y - 24, 48, 6, Math.min(1, this.carryDist / this.carryTargetDist));
+          ctx.restore();
+          return;
+        }
+        ctx.fillStyle = this.color || '#ff6b8b';
+        ctx.fillRect(this.x, this.y + 4, this.w, 8);
+        ctx.fillStyle = '#fff5f7';
+        ctx.fillRect(this.x + 5, this.y, 12, 6);
+        if (this.destroyed) {
+          // 被咖呲咬亂的齒痕標記
+          ctx.fillStyle = '#ffd166';
+          ctx.font = '800 10px "PingFang TC", sans-serif';
+          ctx.fillText('已咬走!', this.x - 2, this.y - 4);
+        }
+        ctx.restore();
+        return;
+      }
+
+      // 衛生紙捲與展開的地板長紙帶 (Toilet Paper Roll)
+      if (this.type === 'tp_roll') {
+        // 先畫地板上的白色衛生紙帶
+        ctx.fillStyle = '#ffffff';
+        this.trailSegments.forEach(seg => {
+          ctx.fillRect(seg.x, seg.y - 5, seg.w, 5);
+          ctx.fillStyle = '#e2e8f0';
+          ctx.fillRect(seg.x + 4, seg.y - 4, 2, 3);
+          ctx.fillStyle = '#ffffff';
+        });
+
+        // 捲筒本體
+        const remRatio = Math.max(0.2, 1 - this.unrolledLength / this.maxUnrollLength);
+        const rw = Math.round(this.w * remRatio);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(this.x, this.y, rw, this.h);
+        ctx.fillStyle = '#b08968';
+        ctx.fillRect(this.x + Math.floor(rw / 3), this.y + 5, Math.max(4, Math.floor(rw / 3)), this.h - 10);
+
+        if (this.isPulling && !this.destroyed) {
+          this.drawProgressBar(ctx, this.x - 14, this.y - 16, 52, 6, this.unrolledLength / this.maxUnrollLength);
+        }
+        ctx.restore();
+        return;
+      }
+
+      // 狗狗玩具球 (Toy Ball)
+      if (this.type === 'toy_ball') {
+        const cx = this.x + this.w / 2;
+        const cy = this.y + this.h / 2;
+        ctx.translate(cx, cy);
+        ctx.rotate(this.rotation);
+        ctx.fillStyle = '#ffbe0b';
+        ctx.beginPath();
+        ctx.arc(0, 0, this.w / 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#fb5607';
+        ctx.fillRect(-this.w / 2 + 2, -3, this.w - 4, 6);
+        ctx.restore();
+        return;
+      }
+
+      // 可推落物件碎裂後的殘骸
+      if (this.destroyed) {
+        ctx.fillStyle = this.color;
+        if (this.type === 'book') {
+          ctx.fillRect(this.x - 4, this.y + this.h - 7, this.h, 7);
+          ctx.fillStyle = '#fff8e7';
+          ctx.fillRect(this.x, this.y + this.h - 5, this.h - 6, 3);
+        } else {
+          ctx.fillRect(this.x, this.y + this.h - 5, 7, 5);
+          ctx.fillRect(this.x + 11, this.y + this.h - 4, 6, 4);
+          ctx.fillRect(this.x - 6, this.y + this.h - 4, 5, 4);
+        }
+        ctx.restore();
+        return;
+      }
+
+      const cx = this.x + this.w / 2;
+      const cy = this.y + this.h / 2;
+      ctx.translate(cx, cy);
+      ctx.rotate(this.rotation);
+
+      if (this.type === 'vase') {
+        ctx.fillStyle = this.color;
+        ctx.fillRect(-9, -6, 18, 20);
+        ctx.fillRect(-5, -14, 10, 8);
+        ctx.fillRect(-7, -16, 14, 3);
+        ctx.fillStyle = '#38b000';
+        ctx.fillRect(-1, -24, 3, 8);
+        ctx.fillStyle = '#ff5d8f';
+        ctx.fillRect(-5, -28, 10, 6);
+      } else if (this.type === 'cup') {
+        ctx.fillStyle = '#edf2f4';
+        ctx.fillRect(-8, -10, 16, 20);
+        ctx.fillStyle = '#4ea8de';
+        ctx.fillRect(-6, -6, 12, 14);
+      } else if (this.type === 'plate') {
+        ctx.fillStyle = '#f8f9fa';
+        ctx.fillRect(-13, -4, 26, 8);
+        ctx.fillStyle = '#adb5bd';
+        ctx.fillRect(-9, 4, 18, 3);
+      } else if (this.type === 'jar') {
+        ctx.fillStyle = '#f4a261';
+        ctx.fillRect(-10, -10, 20, 22);
+        ctx.fillStyle = '#e76f51';
+        ctx.fillRect(-8, -14, 16, 4);
+      } else if (this.type === 'book') {
+        ctx.fillStyle = this.color;
+        ctx.fillRect(-this.w / 2, -this.h / 2, this.w, this.h);
+        ctx.fillStyle = '#ffd166';
+        ctx.fillRect(-this.w / 2 + 2, -this.h / 2 + 4, this.w - 4, 3);
+      }
+
+      ctx.restore();
+    }
+
+    drawProgressBar(ctx, x, y, w, h, ratio) {
+      ctx.fillStyle = '#2d1b0e';
+      ctx.fillRect(x - 2, y - 2, w + 4, h + 4);
+      ctx.fillStyle = '#42b86b';
+      ctx.fillRect(x, y, Math.round(w * ratio), h);
+    }
+  }
+
+  /* =========================================================================
+   * 8. OwnerAI - 主人巡邏、聲音調查、視野扇形與追逐咖呲狀態機 (7種狀態)
+   * ========================================================================= */
+  class OwnerAI {
+    constructor(cfg) {
+      this.minX = cfg.minX || 120;
+      this.maxX = cfg.maxX || 1300;
+      this.x = cfg.startX || 700;
+      this.y = cfg.floorY - 118;
+      this.w = 48;
+      this.h = 118;
+      this.patrolSpeed = cfg.patrolSpeed || 85;
+      this.chaseSpeed = cfg.chaseSpeed || 175;
+      this.visionRange = cfg.visionRange || 250;
+      this.facing = -1;
+
+      // 7 States: patrol, heard, investigate, spotted, chase, lost, return
+      this.state = 'patrol';
+      this.stateTimer = 0;
+      this.targetX = this.x;
+      this.animTimer = 0;
+    }
+
+    hearNoise(noiseX) {
+      if (this.state === 'chase' || this.state === 'spotted') return;
+      this.targetX = Math.max(this.minX, Math.min(this.maxX, noiseX));
+      this.facing = this.targetX >= this.x ? 1 : -1;
+      this.state = 'heard';
+      this.stateTimer = 0.55;
+    }
+
+    update(dt, shiba, audio, level) {
+      this.animTimer += dt;
+
+      const canSeeShiba = this.checkVision(shiba);
+
+      if (canSeeShiba) {
+        if (this.state !== 'chase' && this.state !== 'spotted') {
+          this.state = 'spotted';
+          this.stateTimer = 0.35;
+          audio.alertOwner();
+        }
+        this.targetX = shiba.x;
+      }
+
+      switch (this.state) {
+        case 'patrol': {
+          this.x += this.facing * this.patrolSpeed * dt;
+          if (this.x <= this.minX) {
+            this.x = this.minX;
+            this.facing = 1;
+          } else if (this.x >= this.maxX) {
+            this.x = this.maxX;
+            this.facing = -1;
+          }
+          break;
+        }
+        case 'heard': {
+          this.stateTimer -= dt;
+          if (this.stateTimer <= 0) {
+            this.state = 'investigate';
+          }
+          break;
+        }
+        case 'investigate': {
+          const dx = this.targetX - this.x;
+          if (Math.abs(dx) > 12) {
+            this.facing = Math.sign(dx);
+            this.x += this.facing * (this.patrolSpeed * 1.35) * dt;
+          } else {
+            this.state = 'lost';
+            this.stateTimer = 1.4;
+          }
+          break;
+        }
+        case 'spotted': {
+          this.facing = shiba.x >= this.x ? 1 : -1;
+          this.stateTimer -= dt;
+          if (this.stateTimer <= 0) {
+            this.state = 'chase';
+          }
+          break;
+        }
+        case 'chase': {
+          if (shiba.isHidden || shiba.startledTimer > 0 || shiba.invulnTimer > 0) {
+            this.state = 'lost';
+            this.stateTimer = 1.5;
+            break;
+          }
+          const dx = shiba.x - this.x;
+          this.facing = dx >= 0 ? 1 : -1;
+          this.x += this.facing * this.chaseSpeed * dt;
+          this.x = Math.max(60, Math.min(level.worldWidth - 100, this.x));
+
+          const distX = Math.abs((this.x + this.w / 2) - (shiba.x + shiba.w / 2));
+          const distY = Math.abs((this.y + this.h - 30) - (shiba.y + shiba.h / 2));
+          if (distX < 42 && distY < 58) {
+            level.onShibaCaught();
+            this.state = 'return';
+          } else if (!canSeeShiba && distX > this.visionRange * 1.25) {
+            this.state = 'lost';
+            this.stateTimer = 1.5;
+          }
+          break;
+        }
+        case 'lost': {
+          this.stateTimer -= dt;
+          this.facing = Math.floor(this.stateTimer * 3) % 2 === 0 ? 1 : -1;
+          if (this.stateTimer <= 0) {
+            this.state = 'return';
+          }
+          break;
+        }
+        case 'return': {
+          this.state = 'patrol';
+          break;
+        }
+      }
+    }
+
+    checkVision(shiba) {
+      if (shiba.isHidden || shiba.startledTimer > 0 || shiba.invulnTimer > 0 || shiba.state === 'victory') {
+        return false;
+      }
+      const eyeX = this.x + this.w / 2;
+      const eyeY = this.y + 24;
+      const shibaCX = shiba.x + shiba.w / 2;
+      const shibaCY = shiba.y + shiba.h / 2;
+
+      const dx = shibaCX - eyeX;
+      const dy = shibaCY - eyeY;
+
+      if (Math.sign(dx) !== this.facing) return false;
+      if (Math.abs(dx) > this.visionRange) return false;
+      const maxVert = 35 + (Math.abs(dx) / this.visionRange) * 95;
+      return Math.abs(dy) <= maxVert;
+    }
+
+    draw(ctx) {
+      ctx.save();
+      const eyeX = this.x + this.w / 2;
+      const eyeY = this.y + 24;
+
+      const isAlert = this.state === 'chase' || this.state === 'spotted';
+      const isHeard = this.state === 'heard' || this.state === 'investigate';
+      ctx.fillStyle = isAlert
+        ? 'rgba(230, 72, 72, 0.26)'
+        : isHeard
+          ? 'rgba(255, 183, 3, 0.24)'
+          : 'rgba(255, 235, 130, 0.17)';
+
+      ctx.beginPath();
+      ctx.moveTo(eyeX, eyeY);
+      ctx.lineTo(eyeX + this.facing * this.visionRange, eyeY - 75);
+      ctx.lineTo(eyeX + this.facing * this.visionRange, eyeY + 105);
+      ctx.closePath();
+      ctx.fill();
+
+      const cx = Math.round(this.x + this.w / 2);
+      const cy = Math.round(this.y);
+      ctx.translate(cx, cy);
+      ctx.scale(this.facing, 1);
+
+      const walkSwing = (this.state === 'patrol' || this.state === 'investigate' || this.state === 'chase')
+        ? Math.sin(this.animTimer * (this.state === 'chase' ? 14 : 8)) * 7
+        : 0;
+
+      ctx.fillStyle = 'rgba(0,0,0,0.25)';
+      ctx.fillRect(-18, this.h - 4, 36, 6);
+
+      ctx.fillStyle = '#2b3a4a';
+      ctx.fillRect(-10 - walkSwing * 0.6, 68, 9, 46);
+      ctx.fillRect(2 + walkSwing * 0.6, 68, 9, 46);
+      ctx.fillStyle = '#e07a5f';
+      ctx.fillRect(-10 - walkSwing * 0.6, 110, 13, 8);
+      ctx.fillRect(2 + walkSwing * 0.6, 110, 13, 8);
+
+      ctx.fillStyle = '#457b9d';
+      ctx.fillRect(-14, 28, 28, 42);
+      ctx.fillStyle = '#a8dadc';
+      ctx.fillRect(-10, 32, 20, 6);
+
+      ctx.fillStyle = '#457b9d';
+      ctx.fillRect(-4 + walkSwing * 0.5, 34, 9, 26);
+
+      ctx.fillStyle = '#f4cbb2';
+      ctx.fillRect(-11, 6, 22, 22);
+      ctx.fillStyle = '#3d2618';
+      ctx.fillRect(-13, 2, 26, 9);
+      ctx.fillRect(-13, 6, 6, 12);
+      ctx.fillStyle = '#1d3557';
+      ctx.fillRect(3, 13, 7, 5);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(5, 14, 3, 3);
+
+      ctx.restore();
+
+      if (this.state !== 'patrol') {
+        ctx.save();
+        ctx.font = '900 18px "PingFang TC", sans-serif';
+        ctx.textAlign = 'center';
+        const badgeText = isAlert ? '！發現咖呲' : (isHeard ? '？什麼聲音' : '？咖呲去哪了');
+        const badgeColor = isAlert ? '#e64848' : '#ffb703';
+        ctx.fillStyle = '#2d1b0e';
+        ctx.fillRect(cx - 58, this.y - 34, 116, 24);
+        ctx.fillStyle = badgeColor;
+        ctx.fillText(badgeText, cx, this.y - 16);
+        ctx.restore();
+      }
+    }
+  }
+
+  /* =========================================================================
+   * 9. LevelManager - 三大柴犬主題關卡定義、場景繪製、碰撞與任務檢查
+   * ========================================================================= */
+  const LEVEL_CONFIGS = {
+    1: {
+      id: 1,
+      name: '第一關：咖呲的客廳大冒險',
+      subtitle: '趁主人不注意，頂倒花瓶、抓撓沙發、把拖鞋咬走，再溜回狗窩！',
+      worldWidth: 1500,
+      floorY: 470,
+      timeLimit: 120,
+      targetScore: 550,
+      starThresholds: [550, 820, 1080],
+      theme: {
+        wallTop: '#f3e5ab',
+        wallBottom: '#e6d296',
+        floor: '#9c6644',
+        baseboard: '#58311a'
+      },
+      shibaStart: { x: 85, y: 420 },
+      dogBed: { x: 1350, y: 438, w: 82, h: 32 },
+      owner: { startX: 880, minX: 320, maxX: 1250, patrolSpeed: 76, chaseSpeed: 156, visionRange: 235 },
+      platforms: [
+        { x: 220, y: 390, w: 180, h: 16, type: 'sofa_top', label: '沙發' },
+        { x: 470, y: 400, w: 150, h: 14, type: 'table', label: '茶几' },
+        { x: 700, y: 320, w: 170, h: 14, type: 'shelf', label: '矮櫃' },
+        { x: 940, y: 250, w: 200, h: 14, type: 'shelf', label: '書架上層' },
+        { x: 940, y: 350, w: 200, h: 14, type: 'shelf', label: '書架中層' },
+        { x: 1190, y: 370, w: 110, h: 14, type: 'table', label: '邊桌' }
+      ],
+      hidingSpots: [
+        { x: 245, y: 412, w: 120, h: 58, type: 'under_sofa', name: '沙發後方' },
+        { x: 485, y: 412, w: 110, h: 58, type: 'under_table', name: '茶几底下' },
+        { x: 850, y: 410, w: 78, h: 60, type: 'box', name: '大型紙箱' },
+        { x: 1130, y: 410, w: 78, h: 60, type: 'box', name: '大型紙箱' }
+      ],
+      objects: [
+        { id: 's1', type: 'sofa', name: '客廳沙發', x: 220, y: 446, w: 180, h: 24, score: 220 },
+        { id: 'sl1', type: 'slipper', name: '主人的紅拖鞋', x: 415, y: 458, w: 26, h: 12, score: 160, color: '#ff6b8b' },
+        { id: 'tb1', type: 'toy_ball', name: '狗狗玩具球', x: 645, y: 450, w: 20, h: 20, score: 100 },
+        { id: 'c1', type: 'cup', name: '茶几水杯', x: 500, y: 380, w: 16, h: 20, score: 110 },
+        { id: 'v1', type: 'vase', name: '青瓷花瓶', x: 565, y: 374, w: 18, h: 26, score: 160, color: '#4ea8de' },
+        { id: 'v2', type: 'vase', name: '矮櫃花瓶', x: 775, y: 294, w: 18, h: 26, score: 160, color: '#ff6b6b' },
+        { id: 'b1', type: 'book', name: '精裝書', x: 970, y: 324, w: 14, h: 26, score: 90, color: '#2a9d8f' },
+        { id: 'b2', type: 'book', name: '百科全書', x: 990, y: 324, w: 14, h: 26, score: 90, color: '#e76f51' },
+        { id: 'b3', type: 'book', name: '漫畫集', x: 1010, y: 324, w: 14, h: 26, score: 90, color: '#f4a261' },
+        { id: 'v3', type: 'vase', name: '高腳花瓶', x: 1085, y: 224, w: 18, h: 26, score: 170, color: '#9b5de5' },
+        { id: 'c2', type: 'cup', name: '邊桌水杯', x: 1235, y: 350, w: 16, h: 20, score: 110 }
+      ]
+    },
+
+    2: {
+      id: 2,
+      name: '第二關：廚房偷吃大作戰',
+      subtitle: '聞到香噴噴的餅乾罐了！撞倒廚房零食與杯盤、完成三連擊並躲開主人！',
+      worldWidth: 1620,
+      floorY: 470,
+      timeLimit: 115,
+      targetScore: 950,
+      starThresholds: [950, 1250, 1550],
+      theme: {
+        wallTop: '#e0fbfc',
+        wallBottom: '#c2dfe3',
+        floor: '#cad2c5',
+        baseboard: '#52796f'
+      },
+      shibaStart: { x: 85, y: 420 },
+      dogBed: { x: 1480, y: 438, w: 82, h: 32 },
+      owner: { startX: 960, minX: 260, maxX: 1400, patrolSpeed: 96, chaseSpeed: 176, visionRange: 250 },
+      platforms: [
+        { x: 210, y: 385, w: 120, h: 14, type: 'table', label: '餐椅' },
+        { x: 360, y: 325, w: 230, h: 16, type: 'table', label: '大餐桌' },
+        { x: 650, y: 350, w: 260, h: 16, type: 'counter', label: '廚房流理台' },
+        { x: 700, y: 235, w: 190, h: 14, type: 'shelf', label: '零食架' },
+        { x: 970, y: 340, w: 230, h: 16, type: 'counter', label: '中島吧台' },
+        { x: 1250, y: 260, w: 190, h: 14, type: 'shelf', label: '碗盤高櫃' }
+      ],
+      hidingSpots: [
+        { x: 185, y: 410, w: 78, h: 60, type: 'box', name: '食材大紙箱' },
+        { x: 410, y: 412, w: 110, h: 58, type: 'under_table', name: '餐桌底下' },
+        { x: 690, y: 406, w: 82, h: 64, type: 'cabinet', name: '流理台櫃後' },
+        { x: 1150, y: 410, w: 78, h: 60, type: 'box', name: '大型紙箱' }
+      ],
+      InitialPuddles: [
+        { x: 560, y: 470, w: 120 },
+        { x: 960, y: 470, w: 130 }
+      ],
+      objects: [
+        { id: 'k_c1', type: 'cup', name: '玻璃水杯', x: 390, y: 305, w: 16, h: 20, score: 120 },
+        { id: 'k_p1', type: 'plate', name: '瓷餐盤', x: 445, y: 317, w: 26, h: 8, score: 135 },
+        { id: 'k_p2', type: 'plate', name: '精緻湯盤', x: 495, y: 317, w: 26, h: 8, score: 135 },
+        { id: 'k_v1', type: 'vase', name: '餐桌花瓶', x: 550, y: 299, w: 18, h: 26, score: 170, color: '#2ec4b6' },
+        { id: 'k_c2', type: 'cup', name: '馬克杯', x: 685, y: 330, w: 16, h: 20, score: 120 },
+        { id: 'k_j1', type: 'jar', name: '牛肉乾餅乾罐', x: 750, y: 328, w: 20, h: 22, score: 165 },
+        { id: 'k_j2', type: 'jar', name: '起司零食罐', x: 830, y: 328, w: 20, h: 22, score: 165 },
+        { id: 'k_j3', type: 'jar', name: '雞肉條罐', x: 735, y: 213, w: 20, h: 22, score: 170 },
+        { id: 'k_j4', type: 'jar', name: '潔牙骨容器', x: 810, y: 213, w: 20, h: 22, score: 170 },
+        { id: 'k_p3', type: 'plate', name: '吧台盤子', x: 1010, y: 332, w: 26, h: 8, score: 135 },
+        { id: 'k_c3', type: 'cup', name: '果汁杯', x: 1080, y: 320, w: 16, h: 20, score: 120 },
+        { id: 'k_v2', type: 'vase', name: '吧台花瓶', x: 1145, y: 314, w: 18, h: 26, score: 175, color: '#ff9f1c' },
+        { id: 'k_p4', type: 'plate', name: '高櫃名貴盤', x: 1290, y: 252, w: 26, h: 8, score: 165 },
+        { id: 'k_j5', type: 'jar', name: '高櫃食物容器', x: 1365, y: 238, w: 20, h: 22, score: 165 }
+      ]
+    },
+
+    3: {
+      id: 3,
+      name: '第三關：書房拆家王',
+      subtitle: '推倒書本、拉扯窗簾、把衛生紙捲拉得滿地都是，成為真正的拆家王！',
+      worldWidth: 1720,
+      floorY: 470,
+      timeLimit: 135,
+      targetScore: 1450,
+      starThresholds: [1450, 1800, 2150],
+      theme: {
+        wallTop: '#2b2d42',
+        wallBottom: '#1f2030',
+        floor: '#6f4518',
+        baseboard: '#3d250c'
+      },
+      shibaStart: { x: 85, y: 420 },
+      dogBed: { x: 1580, y: 438, w: 82, h: 32 },
+      owner: { startX: 980, minX: 250, maxX: 1500, patrolSpeed: 108, chaseSpeed: 188, visionRange: 265 },
+      platforms: [
+        { x: 210, y: 390, w: 165, h: 16, type: 'sofa_top', label: '閱讀沙發' },
+        { x: 430, y: 350, w: 210, h: 16, type: 'table', label: '紅木書桌' },
+        { x: 690, y: 365, w: 220, h: 14, type: 'shelf', label: '大書架一層' },
+        { x: 690, y: 270, w: 220, h: 14, type: 'shelf', label: '大書架二層' },
+        { x: 690, y: 175, w: 220, h: 14, type: 'shelf', label: '大書架頂層' },
+        { x: 970, y: 310, w: 170, h: 14, type: 'shelf', label: '窗邊踏台' },
+        { x: 1200, y: 350, w: 230, h: 14, type: 'shelf', label: '典藏書櫃下層' },
+        { x: 1200, y: 235, w: 230, h: 14, type: 'shelf', label: '典藏書櫃上層' }
+      ],
+      hidingSpots: [
+        { x: 235, y: 412, w: 115, h: 58, type: 'under_sofa', name: '沙發後方' },
+        { x: 470, y: 412, w: 110, h: 58, type: 'under_table', name: '書桌底下' },
+        { x: 610, y: 410, w: 78, h: 60, type: 'box', name: '大型書箱' },
+        { x: 1115, y: 406, w: 82, h: 64, type: 'cabinet', name: '置物櫃後' }
+      ],
+      objects: [
+        { id: 'st_s1', type: 'sofa', name: '書房皮沙發', x: 210, y: 446, w: 165, h: 24, score: 240 },
+        { id: 'st_sl1', type: 'slipper', name: '書房皮拖鞋', x: 385, y: 458, w: 26, h: 12, score: 170, color: '#4ea8de' },
+        { id: 'st_tp1', type: 'tp_roll', name: '捲筒衛生紙', x: 915, y: 448, w: 24, h: 22, score: 260 },
+        { id: 'st_c1', type: 'cup', name: '咖啡杯', x: 465, y: 330, w: 16, h: 20, score: 125 },
+        { id: 'st_v1', type: 'vase', name: '古董花瓶', x: 565, y: 324, w: 18, h: 26, score: 210, color: '#f72585' },
+        { id: 'st_b1', type: 'book', name: '厚重法典', x: 720, y: 339, w: 14, h: 26, score: 110, color: '#e63946' },
+        { id: 'st_b2', type: 'book', name: '歷史全集', x: 738, y: 339, w: 14, h: 26, score: 110, color: '#457b9d' },
+        { id: 'st_b3', type: 'book', name: '哲學導論', x: 756, y: 339, w: 14, h: 26, score: 110, color: '#2a9d8f' },
+        { id: 'st_b4', type: 'book', name: '精裝畫冊', x: 780, y: 244, w: 14, h: 26, score: 115, color: '#f4a261' },
+        { id: 'st_b5', type: 'book', name: '建築圖鑑', x: 798, y: 244, w: 14, h: 26, score: 115, color: '#9b5de5' },
+        { id: 'st_v2', type: 'vase', name: '頂層翡翠瓶', x: 790, y: 149, w: 18, h: 26, score: 230, color: '#06d6a0' },
+        { id: 'st_cur1', type: 'curtain', name: '絨布落地窗簾', x: 1020, y: 185, w: 58, h: 125, score: 320, color: '#c1121f' },
+        { id: 'st_b6', type: 'book', name: '重要文件夾', x: 1245, y: 324, w: 14, h: 26, score: 115, color: '#ffb703' },
+        { id: 'st_b7', type: 'book', name: '研究報告', x: 1263, y: 324, w: 14, h: 26, score: 115, color: '#fb8500' },
+        { id: 'st_b8', type: 'book', name: '珍藏詩集', x: 1260, y: 209, w: 14, h: 26, score: 125, color: '#8ecae6' },
+        { id: 'st_v3', type: 'vase', name: '名貴青花瓶', x: 1360, y: 209, w: 18, h: 26, score: 220, color: '#3a86ff' }
+      ]
+    }
+  };
+
+  class LevelManager {
+    constructor(levelId, saveManager, audio, particles, combo, onFinishCallback) {
+      this.cfg = LEVEL_CONFIGS[levelId];
+      this.id = levelId;
+      this.saveManager = saveManager;
+      this.audio = audio;
+      this.particles = particles;
+      this.combo = combo;
+      this.onFinishCallback = onFinishCallback;
+
+      this.worldWidth = this.cfg.worldWidth;
+      this.floorY = this.cfg.floorY;
+      this.platforms = this.cfg.platforms.map(p => Object.assign({}, p));
+      this.hidingSpots = this.cfg.hidingSpots.map(h => Object.assign({}, h));
+      this.objects = this.cfg.objects.map(o => new DestructibleObject(o));
+      this.puddles = (this.cfg.InitialPuddles || []).map(p => Object.assign({}, p));
+
+      this.shiba = new ShibaPlayer(this.cfg.shibaStart.x, this.cfg.shibaStart.y, this.saveManager.data.skills);
+      this.owner = new OwnerAI(Object.assign({ floorY: this.floorY }, this.cfg.owner));
+
+      this.score = 0;
+      this.timeLeft = this.cfg.timeLimit;
+      this.lives = 3;
+      this.timesCaught = 0;
+      this.destroyedCount = 0;
+      this.vasesDestroyed = 0;
+      this.sofaScratched = false;
+      this.slipperBitten = false;
+      this.tpUnrolled = false;
+      this.booksDestroyed = 0;
+      this.curtainDestroyed = false;
+      this.achievedCombo3 = false;
+      this.finished = false;
+    }
+
+    checkNearSnack(shiba) {
+      for (const obj of this.objects) {
+        if (obj.type === 'jar' && !obj.destroyed) {
+          const dx = Math.abs((shiba.x + shiba.w / 2) - (obj.x + obj.w / 2));
+          const dy = Math.abs((shiba.y + shiba.h / 2) - (obj.y + obj.h / 2));
+          if (dx < 95 && dy < 75) return true;
+        }
+      }
+      return false;
+    }
+
+    performShibaBumpOrBite(shiba, isPower) {
+      const reach = isPower ? 92 : 56;
+      const force = isPower ? 1.8 : 1.0;
+      const hitXMin = shiba.facing === 1 ? shiba.x + shiba.w * 0.2 : shiba.x - reach;
+      const hitXMax = shiba.facing === 1 ? shiba.x + shiba.w + reach : shiba.x + shiba.w * 0.8;
+
+      let hitAny = false;
+      for (const obj of this.objects) {
+        const overlapX = obj.x + obj.w >= hitXMin && obj.x <= hitXMax;
+        const overlapY = obj.y + obj.h >= shiba.y - 24 && obj.y <= shiba.y + shiba.h + 16;
+        if (!overlapX || !overlapY) continue;
+
+        if (obj.isPushable && !obj.destroyed) {
+          obj.push(shiba.facing, force);
+          hitAny = true;
+        } else if (obj.type === 'slipper' && !obj.destroyed && !obj.isCarried) {
+          obj.isCarried = true;
+          shiba.carriedSlipper = obj;
+          this.audio.slipperBite();
+          this.particles.spawnText(shiba.x + shiba.w / 2, shiba.y - 16, '咬住拖鞋了！快跑！', '#ff6b8b', 1.05);
+          hitAny = true;
+        } else if (obj.type === 'tp_roll' && !obj.destroyed && !obj.isPulling) {
+          obj.isPulling = true;
+          obj.lastSegmentX = shiba.x;
+          shiba.activeTpRoll = obj;
+          this.audio.tpUnroll();
+          this.particles.spawnText(shiba.x + shiba.w / 2, shiba.y - 16, '咬住衛生紙！快跑展開！', '#4ea8de', 1.05);
+          hitAny = true;
+        } else if (obj.type === 'toy_ball') {
+          obj.kick(shiba.facing, isPower ? 420 : 280, this);
+          hitAny = true;
+        }
+      }
+
+      if (isPower) {
+        this.particles.spawnDust(shiba.x + shiba.w / 2 + shiba.facing * 35, shiba.y + shiba.h / 2, 10, '#ffd166');
+        this.particles.spawnText(shiba.x + shiba.w / 2, shiba.y - 16, '超級狗掌！', '#ff8c3b', 1.05);
+      }
+      return hitAny;
+    }
+
+    checkDashBump(shiba) {
+      for (const obj of this.objects) {
+        const overlapX = shiba.x + shiba.w > obj.x && shiba.x < obj.x + obj.w;
+        const overlapY = shiba.y + shiba.h > obj.y && shiba.y < obj.y + obj.h;
+        if (!overlapX || !overlapY) continue;
+
+        if (obj.isPushable && !obj.destroyed && !obj.pushed) {
+          obj.push(shiba.facing, 1.2);
+        } else if (obj.type === 'toy_ball') {
+          obj.kick(shiba.facing, 380, this);
+        }
+      }
+    }
+
+    performShibaScratch(shiba, dt) {
+      const speedMult = shiba.skills.powerSlap ? 1.85 : 1.0;
+      for (const obj of this.objects) {
+        if (obj.isScratchable && !obj.destroyed) {
+          const overlapX = shiba.x + shiba.w + 18 > obj.x && shiba.x - 18 < obj.x + obj.w;
+          const overlapY = shiba.y + shiba.h + 24 > obj.y - 24 && shiba.y - 20 < obj.y + obj.h;
+          if (overlapX && overlapY) {
+            if (Math.random() < 0.25) {
+              this.audio.scratch();
+              this.particles.spawnDust(shiba.x + shiba.w / 2 + shiba.facing * 14, shiba.y + shiba.h / 2, 2);
+            }
+            const res = obj.scratch(dt, speedMult);
+            if (res === 'destroyed') {
+              this.onObjectBroken(obj);
+            }
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+
+    onObjectBroken(obj) {
+      this.destroyedCount++;
+      if (obj.type === 'vase') this.vasesDestroyed++;
+      if (obj.type === 'sofa') this.sofaScratched = true;
+      if (obj.type === 'slipper') this.slipperBitten = true;
+      if (obj.type === 'tp_roll') this.tpUnrolled = true;
+      if (obj.type === 'book') this.booksDestroyed++;
+      if (obj.type === 'curtain') this.curtainDestroyed = true;
+
+      const gained = this.combo.registerHit(obj.score, obj.x + obj.w / 2, obj.y, obj.name);
+      this.score += gained;
+      if (this.combo.maxCombo >= 3) {
+        this.achievedCombo3 = true;
+      }
+
+      if (obj.type === 'vase' || obj.type === 'plate' || obj.type === 'jar') {
+        this.audio.shatter();
+        this.particles.spawnShards(obj.x + obj.w / 2, obj.y + obj.h / 2, obj.color, '#ffffff', 14);
+        this.particles.spawnNoiseWave(obj.x + obj.w / 2, obj.y + obj.h, 300);
+        this.owner.hearNoise(obj.x);
+      } else if (obj.type === 'cup') {
+        this.audio.cupSpill();
+        this.particles.spawnSplash(obj.x + obj.w / 2, obj.y + obj.h);
+        this.puddles.push({ x: obj.x - 24, y: this.floorY, w: 68 });
+        this.particles.spawnNoiseWave(obj.x + obj.w / 2, obj.y + obj.h, 220);
+        this.owner.hearNoise(obj.x);
+      } else if (obj.type === 'book') {
+        this.audio.bookFall();
+        this.particles.spawnDust(obj.x + obj.w / 2, obj.y + obj.h, 6);
+        this.owner.hearNoise(obj.x);
+      } else if (obj.type === 'sofa' || obj.type === 'curtain' || obj.type === 'slipper' || obj.type === 'tp_roll') {
+        this.audio.bark('happy');
+        this.particles.spawnShards(obj.x + obj.w / 2, obj.y, '#fffdf7', obj.color || '#ff9f1c', 12);
+      }
+    }
+
+    findNearbyHidingSpot(shiba) {
+      const cx = shiba.x + shiba.w / 2;
+      const cy = shiba.y + shiba.h;
+      for (const spot of this.hidingSpots) {
+        if (cx >= spot.x - 16 && cx <= spot.x + spot.w + 16 && Math.abs(cy - (spot.y + spot.h)) < 48) {
+          return spot;
+        }
+      }
+      return null;
+    }
+
+    getObjectivesStatus() {
+      const list = [];
+      list.push({
+        text: `累積拆家分數 ${this.cfg.targetScore} 分`,
+        done: this.score >= this.cfg.targetScore
+      });
+
+      if (this.id === 1) {
+        list.push({
+          text: `用鼻子頂倒至少 1 個花瓶`,
+          done: this.vasesDestroyed >= 1
+        });
+        list.push({
+          text: `前腳抓撓沙發或咬走拖鞋 (任一完成)`,
+          done: this.sofaScratched || this.slipperBitten
+        });
+      } else if (this.id === 2) {
+        list.push({
+          text: `撞倒至少 3 個廚房物品 (${Math.min(3, this.destroyedCount)}/3)`,
+          done: this.destroyedCount >= 3
+        });
+        list.push({
+          text: `達成至少一次 3 連擊 Combo`,
+          done: this.achievedCombo3
+        });
+      } else if (this.id === 3) {
+        list.push({
+          text: `推倒至少 3 本書 (${Math.min(3, this.booksDestroyed)}/3)`,
+          done: this.booksDestroyed >= 3
+        });
+        list.push({
+          text: `拉扯窗簾或展開捲筒衛生紙 (任一完成)`,
+          done: this.curtainDestroyed || this.tpUnrolled
+        });
+      }
+
+      const allPrimaryDone = list.every(item => item.done);
+      list.push({
+        text: allPrimaryDone ? '返回右側發光狗窩過關！' : '完成上述目標後返回狗窩',
+        done: false
+      });
+
+      return { list, allPrimaryDone };
+    }
+
+    canExitAtBed(shiba) {
+      const status = this.getObjectivesStatus();
+      if (!status.allPrimaryDone) return false;
+      const bed = this.cfg.dogBed;
+      const overlapX = shiba.x + shiba.w > bed.x && shiba.x < bed.x + bed.w;
+      const overlapY = shiba.y + shiba.h >= bed.y - 12 && shiba.y <= bed.y + bed.h;
+      return overlapX && overlapY;
+    }
+
+    onShibaCaught() {
+      if (this.shiba.startledTimer > 0 || this.shiba.invulnTimer > 0 || this.finished) return;
+      this.audio.bark('whine');
+      this.lives--;
+      this.timesCaught++;
+      this.combo.onCaughtPenalty();
+      this.shiba.startledTimer = 0.95;
+      this.particles.spawnText(this.shiba.x + this.shiba.w / 2, this.shiba.y - 20, '咖呲被主人發現了！(-1 狗掌)', '#e64848', 1.15);
+
+      if (this.lives <= 0) {
+        setTimeout(() => {
+          if (!this.finished) {
+            this.triggerFail('三次機會用完，咖呲被主人抱去罰坐反省了！');
+          }
+        }, 880);
+      }
+    }
+
+    triggerVictory() {
+      if (this.finished) return;
+      this.finished = true;
+      this.shiba.state = 'victory';
+      this.audio.victory();
+
+      let stars = 1;
+      if (this.score >= this.cfg.starThresholds[1]) stars = 2;
+      if (this.score >= this.cfg.starThresholds[2] && this.timesCaught <= 1) stars = 3;
+
+      const clearTime = Math.round(this.cfg.timeLimit - this.timeLeft);
+      const unlockMsg = this.saveManager.recordLevelClear(this.id, this.score, stars);
+
+      this.onFinishCallback({
+        victory: true,
+        levelId: this.id,
+        score: this.score,
+        highScore: this.saveManager.data.levels[this.id].highScore,
+        maxCombo: this.combo.maxCombo,
+        destroyed: this.destroyedCount,
+        clearTime,
+        timesCaught: this.timesCaught,
+        stars,
+        unlockMsg
+      });
+    }
+
+    triggerFail(reason) {
+      if (this.finished) return;
+      this.finished = true;
+      this.audio.fail();
+      const clearTime = Math.round(this.cfg.timeLimit - this.timeLeft);
+      this.onFinishCallback({
+        victory: false,
+        reason,
+        levelId: this.id,
+        score: this.score,
+        highScore: this.saveManager.data.levels[this.id].highScore,
+        maxCombo: this.combo.maxCombo,
+        destroyed: this.destroyedCount,
+        clearTime,
+        timesCaught: this.timesCaught,
+        stars: 0,
+        unlockMsg: ''
+      });
+    }
+
+    update(dt, input, justPressed) {
+      if (this.finished) return;
+
+      this.timeLeft -= dt;
+      if (this.timeLeft <= 0) {
+        this.timeLeft = 0;
+        this.triggerFail('時間到了！主人已經準備好牽繩要帶咖呲去洗澡了！');
+        return;
+      }
+
+      this.shiba.update(dt, input, justPressed, this, this.audio, this.particles);
+      this.owner.update(dt, this.shiba, this.audio, this);
+      this.objects.forEach(o => o.update(dt, this));
+      this.combo.update(dt);
+      this.particles.update(dt);
+    }
+
+    draw(ctx) {
+      const th = this.cfg.theme;
+
+      // 1. 牆面與壁紙條紋
+      ctx.fillStyle = th.wallTop;
+      ctx.fillRect(0, 0, this.worldWidth, this.floorY);
+      ctx.fillStyle = th.wallBottom;
+      for (let x = 0; x < this.worldWidth; x += 80) {
+        ctx.fillRect(x, 0, 36, this.floorY);
+      }
+
+      // 踢腳板與木質地板
+      ctx.fillStyle = th.baseboard;
+      ctx.fillRect(0, this.floorY - 14, this.worldWidth, 14);
+      ctx.fillStyle = th.floor;
+      ctx.fillRect(0, this.floorY, this.worldWidth, 260);
+      ctx.strokeStyle = 'rgba(0,0,0,0.18)';
+      ctx.lineWidth = 2;
+      for (let x = 0; x < this.worldWidth; x += 95) {
+        ctx.beginPath();
+        ctx.moveTo(x, this.floorY);
+        ctx.lineTo(x - 25, this.floorY + 140);
+        ctx.stroke();
+      }
+
+      // 2. 窗戶與陽光光束
+      const winPositions = [320, 860, 1340];
+      winPositions.forEach(wx => {
+        ctx.fillStyle = '#8ecae6';
+        ctx.fillRect(wx, 140, 110, 120);
+        ctx.fillStyle = 'rgba(255, 250, 205, 0.14)';
+        ctx.beginPath();
+        ctx.moveTo(wx, 260);
+        ctx.lineTo(wx + 110, 260);
+        ctx.lineTo(wx + 170, this.floorY);
+        ctx.lineTo(wx - 20, this.floorY);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = '#5c3a21';
+        ctx.lineWidth = 6;
+        ctx.strokeRect(wx, 140, 110, 120);
+        ctx.beginPath();
+        ctx.moveTo(wx + 55, 140);
+        ctx.lineTo(wx + 55, 260);
+        ctx.moveTo(wx, 200);
+        ctx.lineTo(wx + 110, 200);
+        ctx.stroke();
+      });
+
+      // 第一關新手教學看板
+      if (this.id === 1) {
+        ctx.fillStyle = 'rgba(45, 29, 18, 0.82)';
+        ctx.fillRect(45, 240, 168, 86);
+        ctx.fillStyle = '#ffd166';
+        ctx.font = '800 12px "PingFang TC", sans-serif';
+        ctx.fillText('柴犬咖呲拆家提示：', 56, 260);
+        ctx.fillStyle = '#fff';
+        ctx.fillText('• 按 W/空白鍵 跳上沙發茶几', 56, 278);
+        ctx.fillText('• 按 J 頂花瓶、咬拖鞋或頂球', 56, 295);
+        ctx.fillText('• 按 K 抓沙發，按 E 躲入大紙箱', 56, 312);
+      }
+
+      // 3. 平台與桌椅支撐腳
+      this.platforms.forEach(p => {
+        if (p.type === 'table') {
+          ctx.fillStyle = '#6f4518';
+          ctx.fillRect(p.x + 12, p.y + p.h, 10, this.floorY - (p.y + p.h));
+          ctx.fillRect(p.x + p.w - 22, p.y + p.h, 10, this.floorY - (p.y + p.h));
+          ctx.fillStyle = '#8b5a2b';
+          ctx.fillRect(p.x, p.y, p.w, p.h);
+        } else if (p.type === 'counter') {
+          ctx.fillStyle = '#dedbd2';
+          ctx.fillRect(p.x + 4, p.y + p.h, p.w - 8, this.floorY - (p.y + p.h));
+          ctx.fillStyle = '#b0c4b1';
+          ctx.fillRect(p.x, p.y, p.w, p.h);
+        } else if (p.type === 'shelf') {
+          ctx.fillStyle = '#5c3a21';
+          ctx.fillRect(p.x, p.y, p.w, p.h);
+          ctx.fillStyle = '#3d250c';
+          ctx.fillRect(p.x + 10, p.y + p.h, 8, 10);
+          ctx.fillRect(p.x + p.w - 18, p.y + p.h, 8, 10);
+        }
+      });
+
+      // 4. 躲藏點（大型紙箱、桌底、櫃子後）
+      this.hidingSpots.forEach(spot => {
+        if (spot.type === 'box') {
+          ctx.fillStyle = '#c99764';
+          ctx.fillRect(spot.x, spot.y, spot.w, spot.h);
+          ctx.fillStyle = '#a47545';
+          ctx.fillRect(spot.x - 4, spot.y, spot.w + 8, 10);
+          ctx.fillStyle = '#362214';
+          ctx.fillRect(spot.x + 14, spot.y + 18, spot.w - 28, 26);
+        } else if (spot.type === 'cabinet') {
+          ctx.fillStyle = '#7f5539';
+          ctx.fillRect(spot.x, spot.y, spot.w, spot.h);
+          ctx.strokeStyle = '#4a2c11';
+          ctx.lineWidth = 3;
+          ctx.strokeRect(spot.x + 5, spot.y + 5, spot.w - 10, spot.h - 10);
+        }
+        const dist = Math.abs((this.shiba.x + this.shiba.w / 2) - (spot.x + spot.w / 2));
+        if (dist < 72 && !this.shiba.isHidden) {
+          ctx.fillStyle = '#2d1b0e';
+          ctx.fillRect(spot.x + spot.w / 2 - 36, spot.y - 22, 72, 18);
+          ctx.fillStyle = '#7bf1a8';
+          ctx.font = '800 11px "PingFang TC", sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(`[E] 躲${spot.name}`, spot.x + spot.w / 2, spot.y - 9);
+        }
+      });
+
+      // 5. 濕滑水漬
+      this.puddles.forEach(pd => {
+        ctx.fillStyle = 'rgba(78, 168, 222, 0.65)';
+        ctx.fillRect(pd.x, pd.y - 4, pd.w, 6);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+        ctx.fillRect(pd.x + 10, pd.y - 3, pd.w * 0.35, 2);
+      });
+
+      // 6. 咖呲的專屬狗窩終點 (Dog Bed)
+      const bed = this.cfg.dogBed;
+      const readyToExit = this.getObjectivesStatus().allPrimaryDone;
+      if (readyToExit) {
+        const pulse = 0.4 + Math.abs(Math.sin(performance.now() * 0.005)) * 0.45;
+        ctx.fillStyle = `rgba(123, 241, 168, ${pulse})`;
+        ctx.beginPath();
+        ctx.arc(bed.x + bed.w / 2, bed.y + bed.h / 2, 52, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.fillStyle = '#d96518';
+      ctx.fillRect(bed.x, bed.y + 8, bed.w, bed.h - 8);
+      ctx.fillStyle = '#fff8e7';
+      ctx.fillRect(bed.x + 8, bed.y + 4, bed.w - 16, 14);
+      // 狗骨頭小裝飾
+      ctx.fillStyle = '#ffd166';
+      ctx.fillRect(bed.x + 32, bed.y + 16, 18, 5);
+      ctx.fillStyle = readyToExit ? '#7bf1a8' : '#ffd166';
+      ctx.font = '900 12px "PingFang TC", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(readyToExit ? '★ 咖呲的狗窩 (可過關!)' : '咖呲的狗窩 (完成目標後返回)', bed.x + bed.w / 2, bed.y - 8);
+
+      // 7. 可互動與破壞物件
+      this.objects.forEach(o => o.draw(ctx));
+
+      // 8. 主人 AI
+      this.owner.draw(ctx);
+
+      // 9. 主角柴犬「咖呲」
+      this.shiba.draw(ctx);
+
+      // 10. 粒子與浮動分數
+      this.particles.draw(ctx);
+    }
+  }
+
+  /* =========================================================================
+   * 10. Camera - 橫向捲軸智慧鏡頭跟隨與邊界限制
+   * ========================================================================= */
+  class Camera {
+    constructor() {
+      this.x = 0;
+      this.y = 0;
+      this.viewW = 960;
+      this.viewH = 540;
+    }
+
+    update(dt, target, worldWidth) {
+      const idealX = (target.x + target.w / 2) - this.viewW * 0.42;
+      const clampedX = Math.max(0, Math.min(Math.max(0, worldWidth - this.viewW), idealX));
+      this.x += (clampedX - this.x) * Math.min(1, dt * 8);
+    }
+  }
+
+  /* =========================================================================
+   * 11. UIManager & Main Game Controller - 畫面渲染、介面互動與主迴圈
+   * ========================================================================= */
+  class Game {
+    constructor() {
+      this.canvas = document.getElementById('game-canvas');
+      this.ctx = this.canvas.getContext('2d');
+      this.titlePreviewCanvas = document.getElementById('title-shiba-preview');
+      this.titlePreviewCtx = this.titlePreviewCanvas.getContext('2d');
+
+      this.saveManager = new SaveManager();
+      this.audio = new AudioManager(this.saveManager);
+      this.input = new InputManager(this.audio);
+      this.particles = new ParticleSystem();
+      this.combo = new ComboSystem(this.audio, this.particles);
+      this.camera = new Camera();
+
+      this.previewShiba = new ShibaPlayer(98, 56, { dash: true, powerSlap: true, doubleJump: true });
+      this.previewShiba.isExcited = true;
+      this.level = null;
+      this.state = 'menu'; // 'menu', 'playing', 'paused', 'result'
+      this.currentLevelId = 1;
+
+      this.lastFrameTime = performance.now();
+      this.accumulator = 0;
+      this.fixedDt = 1 / 60;
+
+      this.initUI();
+      this.handleResize();
+      window.addEventListener('resize', () => this.handleResize());
+
+      requestAnimationFrame((t) => this.loop(t));
+    }
+
+    handleResize() {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const rect = this.canvas.getBoundingClientRect();
+      this.canvas.width = Math.round(rect.width * dpr);
+      this.canvas.height = Math.round(rect.height * dpr);
+
+      this.virtualH = 540;
+      this.virtualW = Math.max(640, Math.round((rect.width / Math.max(1, rect.height)) * this.virtualH));
+      this.camera.viewW = this.virtualW;
+      this.camera.viewH = this.virtualH;
+    }
+
+    initUI() {
+      this.renderPawIcons(3);
+      this.syncSettingsUI();
+
+      document.getElementById('btn-start-game').addEventListener('click', () => {
+        this.audio.initContext();
+        this.startLevel(1);
+      });
+
+      document.getElementById('btn-continue-game').addEventListener('click', () => {
+        this.audio.initContext();
+        this.startLevel(this.saveManager.data.unlockedLevel || 1);
+      });
+
+      document.getElementById('btn-open-levels').addEventListener('click', () => {
+        this.populateLevelCards();
+        this.showOverlay('screen-levels');
+      });
+
+      document.getElementById('btn-close-levels').addEventListener('click', () => {
+        this.showOverlay('screen-title');
+      });
+
+      document.getElementById('btn-open-help').addEventListener('click', () => {
+        this.helpReturnScreen = 'screen-title';
+        this.showOverlay('screen-help');
+      });
+
+      document.getElementById('btn-close-help').addEventListener('click', () => {
+        this.showOverlay(this.helpReturnScreen || 'screen-title');
+      });
+
+      document.getElementById('btn-open-settings').addEventListener('click', () => {
+        this.settingsReturnScreen = 'screen-title';
+        this.syncSettingsUI();
+        this.showOverlay('screen-settings');
+      });
+
+      document.getElementById('btn-close-settings').addEventListener('click', () => {
+        this.showOverlay(this.settingsReturnScreen || 'screen-title');
+      });
+
+      document.getElementById('btn-open-reset').addEventListener('click', () => {
+        this.showOverlay('screen-reset-confirm');
+      });
+
+      document.getElementById('btn-cancel-reset').addEventListener('click', () => {
+        this.showOverlay('screen-title');
+      });
+
+      document.getElementById('btn-confirm-reset').addEventListener('click', () => {
+        this.saveManager.reset();
+        this.syncSettingsUI();
+        this.showOverlay('screen-title');
+      });
+
+      document.getElementById('btn-toggle-sfx').addEventListener('click', () => {
+        this.saveManager.data.settings.sfx = !this.saveManager.data.settings.sfx;
+        this.saveManager.save();
+        this.syncSettingsUI();
+        this.audio.bark('happy');
+      });
+
+      document.getElementById('btn-toggle-bgm').addEventListener('click', () => {
+        this.saveManager.data.settings.bgm = !this.saveManager.data.settings.bgm;
+        this.saveManager.save();
+        this.syncSettingsUI();
+        if (this.saveManager.data.settings.bgm && this.state === 'playing') {
+          this.audio.startBgm();
+        } else {
+          this.audio.stopBgm();
+        }
+      });
+
+      document.getElementById('slider-volume').addEventListener('input', (e) => {
+        this.saveManager.data.settings.volume = parseInt(e.target.value, 10) / 100;
+        this.saveManager.save();
+      });
+
+      document.getElementById('btn-toggle-touch').addEventListener('click', () => {
+        this.saveManager.data.settings.showTouch = !this.saveManager.data.settings.showTouch;
+        this.saveManager.save();
+        this.syncSettingsUI();
+        this.updateTouchVisibility();
+      });
+
+      document.getElementById('btn-pause').addEventListener('click', () => this.pauseGame());
+      document.getElementById('btn-resume').addEventListener('click', () => this.resumeGame());
+      document.getElementById('btn-restart-pause').addEventListener('click', () => this.startLevel(this.currentLevelId));
+      document.getElementById('btn-pause-help').addEventListener('click', () => {
+        this.helpReturnScreen = 'screen-pause';
+        this.showOverlay('screen-help');
+      });
+      document.getElementById('btn-pause-settings').addEventListener('click', () => {
+        this.settingsReturnScreen = 'screen-pause';
+        this.syncSettingsUI();
+        this.showOverlay('screen-settings');
+      });
+      document.getElementById('btn-quit-to-menu').addEventListener('click', () => this.quitToMenu());
+
+      document.getElementById('btn-retry-level').addEventListener('click', () => this.startLevel(this.currentLevelId));
+      document.getElementById('btn-next-level').addEventListener('click', () => {
+        const nextId = Math.min(3, this.currentLevelId + 1);
+        this.startLevel(nextId);
+      });
+      document.getElementById('btn-result-menu').addEventListener('click', () => this.quitToMenu());
+    }
+
+    syncSettingsUI() {
+      const s = this.saveManager.data.settings;
+      document.getElementById('btn-toggle-sfx').textContent = s.sfx ? '開啟' : '關閉';
+      document.getElementById('btn-toggle-bgm').textContent = s.bgm ? '開啟' : '關閉';
+      document.getElementById('slider-volume').value = Math.round((s.volume ?? 0.75) * 100);
+      document.getElementById('btn-toggle-touch').textContent = s.showTouch ? '顯示' : '隱藏';
+    }
+
+    updateTouchVisibility() {
+      const touchEl = document.getElementById('touch-controls');
+      if (this.state === 'playing' && this.saveManager.data.settings.showTouch) {
+        touchEl.classList.remove('hidden');
+      } else {
+        touchEl.classList.add('hidden');
+      }
+    }
+
+    showOverlay(screenId) {
+      const ids = [
+        'screen-title', 'screen-levels', 'screen-help',
+        'screen-settings', 'screen-reset-confirm', 'screen-pause', 'screen-result'
+      ];
+      ids.forEach(id => {
+        document.getElementById(id).classList.toggle('hidden', id !== screenId);
+      });
+    }
+
+    populateLevelCards() {
+      const container = document.getElementById('level-cards-container');
+      container.innerHTML = '';
+      for (let i = 1; i <= 3; i++) {
+        const cfg = LEVEL_CONFIGS[i];
+        const saved = this.saveManager.data.levels[i];
+        const unlocked = i <= this.saveManager.data.unlockedLevel;
+
+        const card = document.createElement('div');
+        card.className = `level-card ${unlocked ? '' : 'locked'}`;
+        card.innerHTML = `
+          <div class="level-info">
+            <h4>${cfg.name}</h4>
+            <p>${cfg.subtitle}</p>
+            <p style="margin-top:4px; font-weight:800; color:#b84a0e;">最高紀錄：${saved.highScore} 分 ｜ 目標：${cfg.targetScore} 分</p>
+          </div>
+          <div class="level-meta">
+            <div class="stars-row">${this.getStarsHTML(saved.stars)}</div>
+            <button class="wood-btn" style="padding:6px 14px; font-size:14px;" ${unlocked ? '' : 'disabled'}>
+              ${unlocked ? '進入房間' : '未解鎖'}
+            </button>
+          </div>
+        `;
+        if (unlocked) {
+          card.querySelector('button').addEventListener('click', () => {
+            this.audio.initContext();
+            this.startLevel(i);
+          });
+        }
+        container.appendChild(card);
+      }
+    }
+
+    getStarsHTML(activeCount) {
+      let html = '';
+      for (let i = 1; i <= 3; i++) {
+        const fill = i <= activeCount ? '#ffb703' : '#d5c5aa';
+        html += `
+          <svg class="star-svg" viewBox="0 0 24 24">
+            <path fill="${fill}" stroke="#5c3a21" stroke-width="2"
+              d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+          </svg>
+        `;
+      }
+      return html;
+    }
+
+    renderPawIcons(livesLeft) {
+      const container = document.getElementById('hud-paws');
+      container.innerHTML = '';
+      for (let i = 0; i < 3; i++) {
+        const lost = i >= livesLeft ? 'lost' : '';
+        container.innerHTML += `
+          <svg class="paw-icon ${lost}" viewBox="0 0 32 32">
+            <circle cx="8" cy="11" r="3.4" fill="#e67e22" stroke="#362214" stroke-width="2"/>
+            <circle cx="14" cy="7.5" r="3.4" fill="#e67e22" stroke="#362214" stroke-width="2"/>
+            <circle cx="20" cy="7.5" r="3.4" fill="#e67e22" stroke="#362214" stroke-width="2"/>
+            <circle cx="25" cy="11" r="3.4" fill="#e67e22" stroke="#362214" stroke-width="2"/>
+            <path d="M9 19 C9 14, 24 14, 24 19 C25 23, 22 27, 16.5 27 C11 27, 8 23, 9 19 Z"
+                  fill="#e67e22" stroke="#362214" stroke-width="2"/>
+          </svg>
+        `;
+      }
+    }
+
+    startLevel(levelId) {
+      this.currentLevelId = levelId;
+      this.particles.clear();
+      this.combo.reset();
+      this.level = new LevelManager(
+        levelId,
+        this.saveManager,
+        this.audio,
+        this.particles,
+        this.combo,
+        (res) => this.onLevelEnded(res)
+      );
+      this.state = 'playing';
+      this.showOverlay(null);
+      document.getElementById('hud-layer').classList.remove('hidden');
+      this.updateTouchVisibility();
+      this.audio.bark('happy');
+      if (this.saveManager.data.settings.bgm) {
+        this.audio.startBgm();
+      }
+      this.updateHUD();
+    }
+
+    pauseGame() {
+      if (this.state !== 'playing') return;
+      this.state = 'paused';
+      this.audio.stopBgm();
+      document.getElementById('pause-level-title').textContent = this.level.cfg.name;
+      this.showOverlay('screen-pause');
+    }
+
+    resumeGame() {
+      if (this.state !== 'paused') return;
+      this.state = 'playing';
+      this.showOverlay(null);
+      if (this.saveManager.data.settings.bgm) {
+        this.audio.startBgm();
+      }
+    }
+
+    quitToMenu() {
+      this.state = 'menu';
+      this.audio.stopBgm();
+      document.getElementById('hud-layer').classList.add('hidden');
+      document.getElementById('touch-controls').classList.add('hidden');
+      this.showOverlay('screen-title');
+    }
+
+    onLevelEnded(res) {
+      this.state = 'result';
+      this.audio.stopBgm();
+      document.getElementById('touch-controls').classList.add('hidden');
+
+      document.getElementById('result-title').textContent = res.victory ? '咖呲拆家成功！' : '咖呲被抓包了！';
+      document.getElementById('result-title').style.color = res.victory ? 'var(--accent-orange-dark)' : 'var(--accent-red)';
+      document.getElementById('result-subtitle').textContent = res.victory
+        ? '咖呲開心地搖著捲尾巴、吐舌頭溜回狗窩了！'
+        : res.reason;
+
+      document.getElementById('result-stars').innerHTML = this.getStarsHTML(res.stars);
+      document.getElementById('res-score').textContent = `${res.score} 分`;
+      document.getElementById('res-best').textContent = `${res.highScore} 分`;
+      document.getElementById('res-combo').textContent = `${res.maxCombo} 連擊`;
+      document.getElementById('res-destroyed').textContent = `${res.destroyed} 次`;
+      document.getElementById('res-time').textContent = `${res.clearTime} 秒`;
+      document.getElementById('res-caught').textContent = `${res.timesCaught} 次`;
+
+      const unlockEl = document.getElementById('result-unlock-msg');
+      if (res.unlockMsg) {
+        unlockEl.textContent = res.unlockMsg;
+        unlockEl.classList.remove('hidden');
+      } else {
+        unlockEl.classList.add('hidden');
+      }
+
+      const nextBtn = document.getElementById('btn-next-level');
+      if (res.victory && res.levelId < 3) {
+        nextBtn.classList.remove('hidden');
+      } else {
+        nextBtn.classList.add('hidden');
+      }
+
+      this.showOverlay('screen-result');
+    }
+
+    updateHUD() {
+      if (!this.level) return;
+      document.getElementById('hud-level-name').textContent = this.level.cfg.name;
+      document.getElementById('hud-score').textContent = this.level.score;
+      document.getElementById('hud-target').textContent = this.level.cfg.targetScore;
+      document.getElementById('hud-timer').textContent = `${Math.ceil(this.level.timeLeft)}s`;
+
+      const mult = this.combo.getMultiplier().toFixed(1);
+      document.getElementById('hud-combo').textContent = `${this.combo.count} (x${mult})`;
+
+      this.renderPawIcons(this.level.lives);
+
+      const objStatus = this.level.getObjectivesStatus();
+      const objContainer = document.getElementById('objectives-list');
+      objContainer.innerHTML = objStatus.list.map(item => `
+        <div class="obj-item ${item.done ? 'done' : ''}">
+          <span class="obj-check"></span>
+          <span>${item.text}</span>
+        </div>
+      `).join('');
+
+      const shiba = this.level.shiba;
+      const skills = this.saveManager.data.skills;
+
+      const dashRatio = (shiba.dashCooldown / 1.5) * 100;
+      document.getElementById('cd-dash').style.height = `${dashRatio}%`;
+      document.getElementById('txt-dash').textContent = shiba.dashCooldown > 0 ? `${shiba.dashCooldown.toFixed(1)}s` : '就緒';
+
+      const badgePower = document.getElementById('badge-power');
+      badgePower.classList.toggle('locked', !skills.powerSlap);
+      if (skills.powerSlap) {
+        const pRatio = (shiba.powerCooldown / 2.8) * 100;
+        document.getElementById('cd-power').style.height = `${pRatio}%`;
+        document.getElementById('txt-power').textContent = shiba.powerCooldown > 0 ? `${shiba.powerCooldown.toFixed(1)}s` : '就緒';
+      } else {
+        document.getElementById('txt-power').textContent = '通關1解鎖';
+      }
+
+      const badgeDjump = document.getElementById('badge-djump');
+      badgeDjump.classList.toggle('locked', !skills.doubleJump);
+      document.getElementById('txt-djump').textContent = skills.doubleJump ? '已啟用' : '通關2解鎖';
+    }
+
+    // 首頁插畫：客廳背景，柴犬咖呲站在散落的拖鞋、抱枕與玩具球旁搖尾巴吐舌頭
+    drawTitleShibaPreview(dt) {
+      const ctx = this.titlePreviewCtx;
+      ctx.clearRect(0, 0, 240, 122);
+
+      // 溫馨客廳牆面與木地板
+      ctx.fillStyle = '#f3e3c3';
+      ctx.fillRect(0, 0, 240, 92);
+      ctx.fillStyle = '#e6d296';
+      for (let x = 0; x < 240; x += 40) {
+        ctx.fillRect(x, 0, 18, 92);
+      }
+      ctx.fillStyle = '#58311a';
+      ctx.fillRect(0, 88, 240, 5);
+      ctx.fillStyle = '#9c6644';
+      ctx.fillRect(0, 93, 240, 29);
+
+      // 背景沙發與散落抱枕
+      ctx.fillStyle = '#b5533c';
+      ctx.fillRect(22, 50, 90, 42);
+      ctx.fillStyle = '#4ea8de';
+      ctx.save();
+      ctx.translate(38, 86);
+      ctx.rotate(-0.25);
+      ctx.fillRect(-12, -12, 22, 16);
+      ctx.restore();
+
+      // 散落的紅拖鞋與衛生紙帶
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(145, 102, 55, 4);
+      ctx.fillStyle = '#ff6b8b';
+      ctx.fillRect(42, 101, 22, 8);
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(46, 98, 10, 5);
+
+      // 狗狗玩具球
+      ctx.fillStyle = '#ffbe0b';
+      ctx.beginPath();
+      ctx.arc(185, 96, 9, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#fb5607';
+      ctx.fillRect(177, 94, 16, 4);
+
+      // 柴犬咖呲主角動態
+      this.previewShiba.animTimer += dt;
+      this.previewShiba.state = Math.floor(this.previewShiba.animTimer % 5) < 2.5 ? 'idle' : 'walk';
+      this.previewShiba.draw(ctx);
+    }
+
+    loop(now) {
+      const frameDt = Math.min(0.1, (now - this.lastFrameTime) / 1000);
+      this.lastFrameTime = now;
+
+      if (this.state === 'menu') {
+        this.drawTitleShibaPreview(frameDt);
+      }
+
+      if (this.state === 'playing' && this.level) {
+        this.accumulator += frameDt;
+        while (this.accumulator >= this.fixedDt) {
+          const jp = this.input.consumeJustPressed();
+          if (jp.pause) {
+            this.pauseGame();
+            this.accumulator = 0;
+            break;
+          }
+          this.level.update(this.fixedDt, this.input, jp);
+          this.camera.update(this.fixedDt, this.level.shiba, this.level.worldWidth);
+          this.accumulator -= this.fixedDt;
+        }
+        this.updateHUD();
+      } else {
+        const jp = this.input.consumeJustPressed();
+        if (jp.pause && this.state === 'paused') {
+          this.resumeGame();
+        }
+      }
+
+      this.ctx.save();
+      this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+      const scaleX = this.canvas.width / this.virtualW;
+      const scaleY = this.canvas.height / this.virtualH;
+      this.ctx.scale(scaleX, scaleY);
+
+      if (this.level) {
+        this.ctx.translate(-Math.round(this.camera.x), 0);
+        this.level.draw(this.ctx);
+      }
+      this.ctx.restore();
+
+      requestAnimationFrame((t) => this.loop(t));
+    }
+  }
+
+  window.addEventListener('load', () => {
+    new Game();
+  });
+})();
+</script>
+</body>
+</html>
