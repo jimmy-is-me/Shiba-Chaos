@@ -1,0 +1,154 @@
+/* Shiba Chaos: responsive visual refresh, original CSS remains available. */
+:root {
+  --bg-wood: #61432d;
+  --bg-wood-light: #956642;
+  --bg-cream: #fff9eb;
+  --accent-orange: #d98a37;
+  --accent-orange-dark: #ad5c23;
+  --accent-green: #3f926c;
+  --text-dark: #34251a;
+}
+html, body { background: #15291f; }
+#game-canvas { background: #233c34; }
+.overlay-screen {
+  background: rgba(12, 29, 24, .78);
+  backdrop-filter: blur(8px);
+}
+.modal-panel {
+  background: linear-gradient(155deg, #fffdf5, #f7e8d2);
+  border: 3px solid #725138;
+  box-shadow: 0 9px 0 #352619, 0 22px 62px rgba(2, 22, 19, .46);
+  border-radius: 22px;
+  scrollbar-width: thin;
+  scrollbar-color: #bf9067 transparent;
+}
+.game-title { text-shadow: 1px 2px 0 #fff6e3, 2px 3px 0 rgba(113, 71, 42, .4); }
+.game-subtitle { line-height: 1.5; }
+.wood-btn, .icon-btn, .t-btn {
+  font-family: inherit;
+  transition: transform .12s ease, background .16s ease, box-shadow .12s ease;
+}
+.wood-btn:focus-visible, .icon-btn:focus-visible, .t-btn:focus-visible {
+  outline: 3px solid #259876;
+  outline-offset: 3px;
+}
+.wood-btn { min-height: 43px; font-weight: 800; }
+.wood-btn:hover:not(:disabled) { transform: translateY(-1px); }
+.wood-btn.sandbox-btn {
+  background: linear-gradient(135deg, #327d5f, #1c6156);
+  border-color: #23533f;
+  box-shadow: 0 4px 0 #153c33;
+}
+.wood-btn.sandbox-btn:hover { background: linear-gradient(135deg, #4b9774, #2b7465); }
+.wardrobe-balance {
+  background: #e9f3e7;
+  border: 2px solid #94ba9d;
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin: 12px 0;
+  color: #245b43;
+  font-weight: 800;
+}
+.wardrobe-balance strong { font-size: 23px; font-variant-numeric: tabular-nums; }
+.look-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.look-card {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  grid-template-rows: 1fr auto;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+  border: 2px solid #d9bd9a;
+  border-radius: 13px;
+  background: #fffaf0;
+  padding: 12px;
+}
+.look-card.equipped { border-color: #4a9871; background: #eef8ee; }
+.look-swatch { width: 42px; height: 42px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 1px 0 2px #937258; }
+.look-card strong { display: block; color: #412b1d; font-size: 15px; }
+.look-card small { display: block; font-size: 12px; color: #735f4f; line-height: 1.45; margin-top: 4px; }
+.look-card .wood-btn { grid-column: 1 / -1; width: 100%; font-size: 13px; min-height: 35px; padding: 6px; }
+.hud-card { border-color: #6d4e32; box-shadow: 0 3px 0 rgba(22, 39, 29, .45); }
+.hud-collect { min-width: 82px; }
+.hud-collect .hud-value { color: #237953; }
+#objectives-box { background: rgba(26, 49, 43, .94); border-color: #a0b68a; }
+#objectives-box .obj-title { color: #f9d58b; }
+.skill-badge { background: rgba(23, 45, 40, .92); border-color: #b0a982; }
+.t-btn {
+  background: rgba(255, 253, 237, .88);
+  border-color: #5e4936;
+  box-shadow: 0 4px 0 rgba(33, 28, 22, .55);
+  backdrop-filter: blur(3px);
+}
+.t-btn.primary {
+  background: rgba(52, 140, 104, .95);
+  border-color: #265742;
+}
+.t-btn.recharging { opacity: .62; }
+#touch-controls { bottom: max(12px, env(safe-area-inset-bottom)); }
+#touch-controls .touch-cluster-right { grid-template-rows: repeat(2, 58px); }
+#touch-controls .touch-cluster-right [data-action="jump"] { width: 58px; border-radius: 50%; }
+#title-shiba-preview { width: min(300px, 90%); height: 146px; }
+.level-card {
+  background: #fff9ed;
+  border: 2px solid #c6a884;
+  box-shadow: 0 3px 0 rgba(94, 67, 44, .2);
+}
+.level-card:hover:not(.locked) { border-color: #7baf8b; }
+@media (max-width: 720px) {
+  .overlay-screen { padding: 8px; align-items: center; }
+  .modal-panel { max-height: calc(100dvh - 20px); padding: 15px; border-width: 2px; border-radius: 15px; }
+  .btn-list { gap: 8px; }
+  .wood-btn { padding: 9px 11px; font-size: 13px; min-height: 39px; }
+  .look-grid { grid-template-columns: 1fr; }
+  #hud-layer { padding: max(5px, env(safe-area-inset-top)) 6px 4px; gap: 4px; }
+  .hud-top-bar { gap: 4px; flex-wrap: nowrap; }
+  .hud-card { padding: 3px 6px; gap: 5px; border-width: 2px; border-radius: 8px; }
+  .hud-card .hud-divider { height: 20px; }
+  .hud-label { font-size: 9px; font-weight: 700; }
+  .hud-value { font-size: 12px; white-space: nowrap; }
+  .hud-card .hud-stat:first-child .hud-label { max-width: 155px; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; }
+  .hud-card:last-child .hud-stat:not(.hud-collect) { display: none; }
+  .hud-card .icon-btn { min-width: 44px; padding: 5px; justify-content: center; font-size: 11px; }
+  #hud-paws .paw-icon { width: 16px; height: 16px; }
+  .hud-sub-bar { gap: 5px; }
+  #objectives-box { max-width: min(74vw, 280px); padding: 6px; font-size: 10px; }
+  #skills-box { gap: 3px; }
+  .skill-badge { min-width: 48px; padding: 4px; font-size: 9px; }
+  .touch-group { gap: 8px; }
+  #touch-controls { padding: 0 10px; gap: 6px; }
+  #touch-controls .touch-cluster-right { grid-template-columns: repeat(3, 50px); grid-template-rows: repeat(2, 50px); gap: 5px; }
+  #touch-controls .touch-cluster-right .t-btn, #touch-controls .touch-cluster-right [data-action="jump"] {
+    width: 50px; height: 50px; border-width: 2px; font-size: 11px;
+  }
+  #touch-controls .touch-group .t-btn { width: 57px; height: 57px; font-size: 11px; border-width: 2px; }
+  .t-btn span.key-sub { font-size: 8px; }
+  .level-card { padding: 10px; }
+  .level-info h4 { font-size: 14px; }
+  .level-info p { font-size: 11px; }
+  .level-meta .stars-row { gap: 0; }
+  .level-meta .star-svg { width: 15px; }
+}
+@media (max-width: 550px) and (orientation: portrait) {
+  .hud-top-bar { flex-wrap: wrap; }
+  #hud-layer .hud-card:first-child { width: 100%; justify-content: space-between; }
+  #hud-layer .hud-card:last-child { margin-left: auto; }
+  #skills-box { display: none; }
+  #objectives-box { max-width: 100%; font-size: 10px; }
+  .hud-sub-bar { max-width: calc(100vw - 12px); }
+  #touch-controls { padding: 0 7px; }
+  #touch-controls .touch-group .t-btn { width: 52px; height: 52px; }
+  #touch-controls .touch-cluster-right { grid-template-columns: repeat(3, 47px); grid-template-rows: repeat(2, 47px); }
+  #touch-controls .touch-cluster-right .t-btn, #touch-controls .touch-cluster-right [data-action="jump"] { width: 47px; height: 47px; }
+}
+@media (max-height: 520px) and (orientation: landscape) {
+  #hud-layer { gap: 3px; }
+  #objectives-box { max-width: 270px; font-size: 9px; padding: 4px 7px; }
+  .hud-sub-bar { transform-origin: top left; }
+  .hud-card { padding: 2px 6px; }
+  #touch-controls { bottom: 5px; }
+  #touch-controls .touch-group .t-btn { width: 46px; height: 46px; }
+  #touch-controls .touch-cluster-right { grid-template-columns: repeat(3, 45px); grid-template-rows: repeat(2, 45px); gap: 4px; }
+  #touch-controls .touch-cluster-right .t-btn, #touch-controls .touch-cluster-right [data-action="jump"] { width: 45px; height: 45px; }
+}
+@media (prefers-reduced-motion: reduce) { .wood-btn, .t-btn { transition: none; } }
