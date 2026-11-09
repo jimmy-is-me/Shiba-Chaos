@@ -91,7 +91,7 @@
   SaveManager.prototype.getDefaultData = function () {
     const data = oldDefault.call(this);
     for (let i = 4; i <= MAX_LEVEL; i++) data.levels[i] = { highScore: 0, stars: 0, cleared: false };
-    data.chaos = { treats: 0, totalTreats: 0, completedJobs: 0, selectedLook: 'classic', ownedLooks: ['classic'], patrol: false };
+    data.chaos = { treats: 0, totalTreats: 0, completedJobs: 0, selectedLook: 'classic', ownedLooks: ['classic'], patrol: false, lastX: 85 };
     return data;
   };
   const oldLoad = SaveManager.prototype.load;
@@ -113,6 +113,7 @@
     if (!wallet.ownedLooks.includes('classic')) wallet.ownedLooks.unshift('classic');
     if (!wallet.ownedLooks.includes(wallet.selectedLook)) wallet.selectedLook = 'classic';
     wallet.patrol = wallet.patrol === true;
+    wallet.lastX = Math.max(20, Math.min(7980, Number(wallet.lastX) || 85));
     return data;
   };
   const oldRecord = SaveManager.prototype.recordLevelClear;
@@ -255,6 +256,8 @@
       this.owner = this.owners[0];
       this.patrolMode = this.saveManager.data.chaos.patrol;
       this.shiba.skills = { dash: true, powerSlap: true, doubleJump: true };
+      this.shiba.x = Math.max(20, Math.min(this.worldWidth - this.shiba.w - 20, Number(this.saveManager.data.chaos.lastX) || 85));
+      this.shiba.y = this.floorY - this.shiba.h;
       this.nextSandboxTask();
     }
   };
@@ -267,6 +270,10 @@
   };
   LevelManager.prototype.updateBones = function (dt) {
     this.playTime += dt;
+    if (this.id === 0 && Math.floor(this.playTime / 6) !== Math.floor((this.playTime - dt) / 6)) {
+      this.saveManager.data.chaos.lastX = Math.round(this.shiba.x);
+      this.saveManager.save();
+    }
     this.sniffTime = Math.max(0, this.sniffTime - dt);
     this.sniffCooldown = Math.max(0, this.sniffCooldown - dt);
     const dog = this.shiba;
@@ -504,28 +511,21 @@
   installMenu();
 
   // Keyboard/touch input: add a sniff action while keeping all original controls.
-  const originalBind = core.InputManager ? core.InputManager.prototype.bindEvents : null;
-  if (originalBind) {
-    core.InputManager.prototype.bindEvents = function () {
-      originalBind.call(this);
-      this.justPressed.sniff = false;
-      const btn = document.querySelector('[data-action="sniff"]');
-      const set = pressed => {
-        this.audio.initContext();
-        if (pressed && !this.touchActions.sniff) this.justPressed.sniff = true;
-        this.touchActions.sniff = pressed;
-        btn.classList.toggle('pressed', pressed);
-      };
-      btn.addEventListener('pointerdown', e => { e.preventDefault(); btn.setPointerCapture(e.pointerId); set(true); });
-      btn.addEventListener('pointerup', e => { e.preventDefault(); set(false); });
-      btn.addEventListener('pointercancel', e => { e.preventDefault(); set(false); });
-      window.addEventListener('keydown', e => { if (e.code === 'KeyF' && !e.repeat) this.justPressed.sniff = true; });
-    };
-  }
+  const originalBind = core.InputManager.prototype.bindEvents;
+  core.InputManager.prototype.bindEvents = function () {
+    originalBind.call(this);
+    // The original .t-btn pointer listeners also cover the new sniff button.
+    this.justPressed.sniff = false;
+    this.touchActions.sniff = false;
+    window.addEventListener('keydown', e => {
+      if (e.code === 'KeyF' && !e.repeat) this.justPressed.sniff = true;
+    });
+  };
 
   const oldInit = Game.prototype.initUI;
   Game.prototype.initUI = function () {
     oldInit.call(this);
+    this.previewShiba.look = this.saveManager.data.chaos.selectedLook;
     document.getElementById('btn-sandbox').addEventListener('click', () => {
       this.audio.initContext(); this.startLevel(0);
     });
@@ -595,7 +595,7 @@
     this.level.setupExpansion();
     this.level.shiba.look = this.saveManager.data.chaos.selectedLook;
     this.previewShiba.look = this.saveManager.data.chaos.selectedLook;
-    this.camera.x = 0;
+    this.camera.x = id === 0 ? Math.max(0, Math.min(this.level.worldWidth - this.virtualW, this.level.shiba.x - this.virtualW * 0.42)) : 0;
     this.accumulator = 0;
     this.hudTimer = 0;
     this.syncPatrol();
@@ -669,6 +669,10 @@
   };
   const oldMenu = Game.prototype.quitToMenu;
   Game.prototype.quitToMenu = function () {
+    if (this.level && this.level.id === 0) {
+      this.saveManager.data.chaos.lastX = Math.round(this.level.shiba.x);
+      this.saveManager.save();
+    }
     oldMenu.call(this);
     this.syncPatrol();
   };
