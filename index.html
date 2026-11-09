@@ -612,6 +612,7 @@
     }
   }
 </style>
+<link rel="stylesheet" href="chaos-expansion.css">
 </head>
 <body>
 
@@ -1838,11 +1839,14 @@
       ctx.save();
       const cx = Math.round(this.x + this.w / 2);
       const cy = Math.round(this.y + this.h / 2);
+      const furColor = this.look === 'cream' ? '#ead4a7' : this.look === 'black' ? '#5c5362' : '#e08e36';
+      const furShade = this.look === 'cream' ? '#c4a87f' : this.look === 'black' ? '#393542' : '#c46d19';
+      const collarColor = this.look === 'cream' ? '#249e9e' : (this.look === 'black' || this.look === 'captain') ? '#3e8bd0' : '#d62828';
 
       // 8. 躲藏狀態：在大型紙箱、桌底或沙發後露出柴犬三角立耳與明亮雙眼
       if (this.state === 'hide') {
         // 立耳
-        ctx.fillStyle = '#d47a22';
+        ctx.fillStyle = furShade;
         ctx.beginPath();
         ctx.moveTo(cx - 13, cy + 2);
         ctx.lineTo(cx - 8, cy - 8);
@@ -1919,17 +1923,17 @@
       ctx.translate(-15, -4 + bobY);
       ctx.rotate(tailWag);
       // 外圈黃褐色毛
-      ctx.fillStyle = '#e08e36';
+      ctx.fillStyle = furColor;
       ctx.fillRect(-9, -11, 12, 11);
       // 內圈奶油白毛與捲曲孔洞
       ctx.fillStyle = '#fff8eb';
       ctx.fillRect(-10, -9, 5, 7);
-      ctx.fillStyle = '#b86214';
+      ctx.fillStyle = furShade;
       ctx.fillRect(-4, -7, 4, 4);
       ctx.restore();
 
       // 後側四肢 (遠端腿)
-      ctx.fillStyle = '#c46d19';
+      ctx.fillStyle = furShade;
       if (this.state === 'jump') {
         ctx.fillRect(-15, 9 + bobY, 6, 9);
         ctx.fillRect(8, 5 + bobY, 6, 8);
@@ -1939,20 +1943,20 @@
       }
 
       // 柴犬結實身體 (黃褐色背毛 + 奶油白胸腹毛 Urajiro)
-      ctx.fillStyle = '#e08e36';
+      ctx.fillStyle = furColor;
       ctx.fillRect(-16, -4 + bobY, 28, 15);
       // 奶油白色胸腹毛 (Urajiro)
       ctx.fillStyle = '#fff8eb';
       ctx.fillRect(-10, 5 + bobY, 22, 6);
       ctx.fillRect(6, -1 + bobY, 8, 10);
       // 紅色小項圈與金色小鈴鐺/名牌
-      ctx.fillStyle = '#d62828';
+      ctx.fillStyle = collarColor;
       ctx.fillRect(5, -4 + bobY, 4, 13);
       ctx.fillStyle = '#ffd166';
       ctx.fillRect(8, 3 + bobY, 4, 4);
 
       // 前側四肢 (近端腿 + 奶油白小狗襪)
-      ctx.fillStyle = '#e08e36';
+      ctx.fillStyle = furColor;
       const frontLegY = this.state === 'scratch' ? Math.round(Math.sin(t * 45) * 4) : 0;
       ctx.fillRect(-11 + legOffset, 9 + bobY, 6, 9);
       ctx.fillRect(8 - legOffset, 9 + bobY + frontLegY, 6, 9);
@@ -1963,7 +1967,7 @@
       // 圓潤可愛的柴犬頭部
       const hx = 2 + headNudgeX;
       const hy = -15 + bobY;
-      ctx.fillStyle = '#e08e36';
+      ctx.fillStyle = furColor;
       ctx.fillRect(hx, hy, 20, 16);
 
       // 柴犬臉頰與吻部奶油白毛 (Urajiro Cheeks & Muzzle)
@@ -1975,7 +1979,7 @@
       ctx.fillRect(hx + 14, hy + 3, 3, 2);
 
       // 三角形直立耳朵（被發現時呈現無辜後收「飛機耳」）
-      ctx.fillStyle = '#c46d19';
+      ctx.fillStyle = furShade;
       if (this.state === 'startled') {
         // 飛機耳後收
         ctx.fillRect(hx - 4, hy + 1, 9, 4);
@@ -3183,6 +3187,21 @@
         ctx.fillRect(x, 0, 36, this.floorY);
       }
 
+      // Paint connected rooms with their own palettes before placing furniture.
+      if (this.cfg.zones) {
+        for (const zone of this.cfg.zones) {
+          if (!this.isVisible(zone.offset, zone.width)) continue;
+          ctx.fillStyle = zone.theme.wallTop;
+          ctx.fillRect(zone.offset, 0, zone.width, this.floorY);
+          ctx.fillStyle = zone.theme.wallBottom;
+          for (let x = zone.offset; x < zone.offset + zone.width; x += 80) {
+            ctx.fillRect(x, 0, 34, this.floorY);
+          }
+          ctx.fillStyle = zone.theme.floor;
+          ctx.fillRect(zone.offset, this.floorY, zone.width, 260);
+        }
+      }
+
       // 踢腳板與木質地板
       ctx.fillStyle = th.baseboard;
       ctx.fillRect(0, this.floorY - 14, this.worldWidth, 14);
@@ -3198,8 +3217,10 @@
       }
 
       // 2. 窗戶與陽光光束
-      const winPositions = [320, 860, 1340];
-      winPositions.forEach(wx => {
+      const winPositions = this.cfg.zones
+        ? this.cfg.zones.flatMap(z => [320, 860, 1200].filter(x => x < z.width - 130).map(x => z.offset + x))
+        : [320, 860, 1340];
+      winPositions.filter(wx => this.isVisible(wx, 110)).forEach(wx => {
         ctx.fillStyle = '#8ecae6';
         ctx.fillRect(wx, 140, 110, 120);
         ctx.fillStyle = 'rgba(255, 250, 205, 0.14)';
@@ -3221,6 +3242,8 @@
         ctx.stroke();
       });
 
+      this.drawRoomDetails(ctx);
+
       // 第一關新手教學看板
       if (this.id === 1) {
         ctx.fillStyle = 'rgba(45, 29, 18, 0.82)';
@@ -3235,7 +3258,7 @@
       }
 
       // 3. 平台與桌椅支撐腳
-      this.platforms.forEach(p => {
+      this.platforms.filter(p => this.isVisible(p.x, p.w)).forEach(p => {
         if (p.type === 'table') {
           ctx.fillStyle = '#6f4518';
           ctx.fillRect(p.x + 12, p.y + p.h, 10, this.floorY - (p.y + p.h));
@@ -3257,7 +3280,7 @@
       });
 
       // 4. 躲藏點（大型紙箱、桌底、櫃子後）
-      this.hidingSpots.forEach(spot => {
+      this.hidingSpots.filter(spot => this.isVisible(spot.x, spot.w)).forEach(spot => {
         if (spot.type === 'box') {
           ctx.fillStyle = '#c99764';
           ctx.fillRect(spot.x, spot.y, spot.w, spot.h);
@@ -3284,7 +3307,7 @@
       });
 
       // 5. 濕滑水漬
-      this.puddles.forEach(pd => {
+      this.puddles.filter(pd => this.isVisible(pd.x, pd.w)).forEach(pd => {
         ctx.fillStyle = 'rgba(78, 168, 222, 0.65)';
         ctx.fillRect(pd.x, pd.y - 4, pd.w, 6);
         ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
@@ -3314,10 +3337,10 @@
       ctx.fillText(readyToExit ? '★ 咖呲的狗窩 (可過關!)' : '咖呲的狗窩 (完成目標後返回)', bed.x + bed.w / 2, bed.y - 8);
 
       // 7. 可互動與破壞物件
-      this.objects.forEach(o => o.draw(ctx));
+      this.objects.filter(o => this.isVisible(o.x, o.w)).forEach(o => o.draw(ctx));
 
       // 8. 主人 AI
-      this.owner.draw(ctx);
+      if (this.id !== 0 || this.patrolMode) this.owner.draw(ctx);
 
       // 9. 主角柴犬「咖呲」
       this.shiba.draw(ctx);
@@ -3789,7 +3812,11 @@
           this.camera.update(this.fixedDt, this.level.shiba, this.level.worldWidth);
           this.accumulator -= this.fixedDt;
         }
-        this.updateHUD();
+        this.hudTimer = (this.hudTimer || 0) + frameDt;
+        if (this.hudTimer >= 0.12) {
+          this.updateHUD();
+          this.hudTimer = 0;
+        }
       } else {
         const jp = this.input.consumeJustPressed();
         if (jp.pause && this.state === 'paused') {
@@ -3813,10 +3840,14 @@
     }
   }
 
+  // Public extension points for modular, optional expansion scripts.
+  window.ShibaChaosEngine = { Game, SaveManager, InputManager, LevelManager, ShibaPlayer, OwnerAI, DestructibleObject, LEVEL_CONFIGS };
+
   window.addEventListener('load', () => {
     new Game();
   });
 })();
 </script>
+<script src="chaos-expansion.js"></script>
 </body>
 </html>
