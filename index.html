@@ -3207,6 +3207,13 @@
       ctx.fillRect(0, this.floorY - 14, this.worldWidth, 14);
       ctx.fillStyle = th.floor;
       ctx.fillRect(0, this.floorY, this.worldWidth, 260);
+      if (this.cfg.zones) {
+        for (const zone of this.cfg.zones) {
+          if (!this.isVisible(zone.offset, zone.width)) continue;
+          ctx.fillStyle = zone.theme.floor;
+          ctx.fillRect(zone.offset, this.floorY, zone.width, 260);
+        }
+      }
       ctx.strokeStyle = 'rgba(0,0,0,0.18)';
       ctx.lineWidth = 2;
       for (let x = 0; x < this.worldWidth; x += 95) {
@@ -3832,6 +3839,8 @@
 
       if (this.level) {
         this.ctx.translate(-Math.round(this.camera.x), 0);
+        this.level.cameraX = this.camera.x;
+        this.level.cameraViewW = this.virtualW;
         this.level.draw(this.ctx);
       }
       this.ctx.restore();
