@@ -63,26 +63,26 @@
 
 專案保持 **無建置工具、無外部 JS 框架、無第三方美術素材**，適合部署在 Cloudflare Pages：
 
-- \`index.html\`：既有遊戲核心（Canvas 繪圖、物理、物件、主人 AI、音效、存檔）
-- \`chaos-expansion.js\`：新增關卡、連續世界、重生與收集、委託、造型及存檔相容邏輯
-- \`chaos-expansion.css\`：選單視覺、衣櫃、HUD、手機直向與橫向響應式樣式
-- \`README.md\`：玩法、結構及部署說明
+- `index.html`：既有遊戲核心（Canvas 繪圖、物理、物件、主人 AI、音效、存檔）
+- `chaos-expansion.js`：新增關卡、連續世界、重生與收集、委託、造型及存檔相容邏輯
+- `chaos-expansion.css`：選單視覺、衣櫃、HUD、手機直向與橫向響應式樣式
+- `README.md`：玩法、結構及部署說明
 
-原有核心以 \`window.ShibaChaosEngine\` 提供擴充點，新功能保留在獨立模組，避免整個遊戲持續堆在單一 HTML。
+原有核心以 `window.ShibaChaosEngine` 提供擴充點，新功能保留在獨立模組，避免整個遊戲持續堆在單一 HTML。
 
 ### 存檔相容
 
-仍使用 \`wumetax_shibachaos_v1\`，並保留對 \`wumetax_catchaos_v1\` 舊名稱的讀取。舊有的 1–3 關最高分、星級、解鎖技能及音效設定不會因新增關卡被清除。存檔僅在目前瀏覽器中保留，清除網站資料或手動重設存檔會失去進度。
+仍使用 `wumetax_shibachaos_v1`，並保留對 `wumetax_catchaos_v1` 舊名稱的讀取。舊有的 1–3 關最高分、星級、解鎖技能及音效設定不會因新增關卡被清除。存檔僅在目前瀏覽器中保留，清除網站資料或手動重設存檔會失去進度。
 
 ## 本地預覽與部署
 
 不需要 npm install、資料庫或 API Key；在專案根目錄啟動靜態伺服器即可：
 
-\`\`\`bash
+```bash
 python3 -m http.server 8000
-\`\`\`
+```
 
-開啟 \`http://localhost:8000/\` 即可。也可將 GitHub 主分支連結到 Cloudflare Pages，**建置指令留空、輸出目錄為專案根目錄**，透過靜態檔案部署。
+開啟 `http://localhost:8000/` 即可。也可將 GitHub 主分支連結到 Cloudflare Pages，**建置指令留空、輸出目錄為專案根目錄**，透過靜態檔案部署。
 
 ## 回歸測試重點
 
